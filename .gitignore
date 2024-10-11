@@ -1,0 +1,28 @@
+# Binaries
+*.exe
+*.exe~
+*.out
+*.o
+
+# Bin folder (compiled binaries)
+bin/
+
+# Vendor directory (if not using vendoring)
+vendor/
+
+# IDE-specific files
+.idea/
+.vscode/
+
+# Go test caches
+*.test
+
+# environment variables
+.env
+
+# Makefile for building the project
+Makefile
+
+# Ignore certs directory
+certs/
+

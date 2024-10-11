@@ -1,0 +1,14 @@
+# Ignore Go build outputs
+bin/
+*.exe
+*.test
+*.out
+
+# Ignore the vendor directory
+vendor/
+
+# Ignore editor and environment-specific files
+*.env
+.git
+.idea
+*.log
