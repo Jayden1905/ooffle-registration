@@ -19,7 +19,7 @@ UPDATE users SET role_id = 1 WHERE user_id = ?;
 SELECT roles.name
 FROM users users
 JOIN roles roles using(role_id)
-WHERE user_id = ?
+WHERE user_id = ?;
 
 -- name: UpdateUserToNormalUser :exec
 UPDATE users SET role_id = 2 WHERE user_id = ?;

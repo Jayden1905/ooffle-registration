@@ -44,11 +44,13 @@ func (s *apiConfig) Run() error {
 	// Register the user routes
 	userHandler.RegisterRoutes(api)
 
-	// create a health check endpoint
-	api.Get("/health", func(c *fiber.Ctx) error {
-		return c.SendString("OK")
+	app.Use("/health", func(c *fiber.Ctx) error {
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{"status": "ok"})
 	})
-	// curl -X GET http://localhost:8080/health
+
+	app.Use("/error", func(c *fiber.Ctx) error {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Internal Server Error"})
+	})
 
 	log.Println("API Server is running on: ", s.addr)
 	return app.Listen(s.addr)

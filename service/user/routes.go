@@ -162,10 +162,19 @@ func (h *Handler) handleCreateSuperUser(c *fiber.Ctx) error {
 		}
 
 		// check if user is already a super user
+		role, err := h.store.GetUserRoleByID(u.UserID)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": fmt.Sprintf("Error getting user role by id: %v", err)})
+		}
+		if role == "super_user" {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "User is already a super user"})
+		}
 
 		// update user to super user
 		h.store.UpdateUserToSuperUser(c.Context(), u.UserID)
-		return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "User updated to super user successfully"})
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{
+			"role": role,
+		})
 	}
 
 	// Create a new super user

@@ -95,6 +95,20 @@ func (q *Queries) GetUserByID(ctx context.Context, userID int32) (User, error) {
 	return i, err
 }
 
+const getUserRoleByUserID = `-- name: GetUserRoleByUserID :one
+SELECT roles.name
+FROM users users
+JOIN roles roles using(role_id)
+WHERE user_id = ?
+`
+
+func (q *Queries) GetUserRoleByUserID(ctx context.Context, userID int32) (RolesName, error) {
+	row := q.db.QueryRowContext(ctx, getUserRoleByUserID, userID)
+	var name RolesName
+	err := row.Scan(&name)
+	return name, err
+}
+
 const updateUserToNormalUser = `-- name: UpdateUserToNormalUser :exec
 UPDATE users SET role_id = 2 WHERE user_id = ?
 `

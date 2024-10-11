@@ -1,0 +1,11 @@
+[build]
+  cmd = "go build -o ./bin/event-registration-software ./cmd/main.go"
+  bin = "bin/event-registration-software"
+  dir = "."
+  include_ext = ["go"]
+  exclude_dir = ["vendor"]
+  run_after_build = "chmod +x ./bin/event-registration-software"
+
+[log]
+  level = "debug"
+

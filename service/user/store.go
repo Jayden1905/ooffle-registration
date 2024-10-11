@@ -44,6 +44,18 @@ func (s *Store) GetUserByID(id int32) (*database.User, error) {
 	return &user, nil
 }
 
+// GetUserRoleByID fetches the role of a user by ID from the database
+func (s *Store) GetUserRoleByID(id int32) (string, error) {
+	role, err := s.db.GetUserRoleByUserID(context.Background(), id)
+	if err != nil {
+		return "", err
+	}
+
+	stringRole := string(role)
+
+	return stringRole, nil
+}
+
 // CreateUser creates a new user in the database
 func (s *Store) CreateUser(ctx context.Context, user *database.User) error {
 	err := s.db.CreateNormalUser(ctx, database.CreateNormalUserParams{

@@ -20,6 +20,7 @@ type User struct {
 type UserStore interface {
 	GetUserByEmail(email string) (*database.User, error)
 	GetUserByID(id int32) (*database.User, error)
+	GetUserRoleByID(id int32) (string, error)
 	CreateUser(ctx context.Context, user *database.User) error
 	CreateSuperUser(ctx context.Context, user *database.User) error
 	UpdateUserToSuperUser(ctx context.Context, id int32) error
