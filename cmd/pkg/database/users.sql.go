@@ -7,6 +7,7 @@ package database
 
 import (
 	"context"
+	"time"
 )
 
 const createNormalUser = `-- name: CreateNormalUser :exec
@@ -54,20 +55,45 @@ func (q *Queries) CreateSuperUser(ctx context.Context, arg CreateSuperUserParams
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT user_id, role_id, first_name, last_name, email, password, subscription_id, created_at, updated_at FROM users WHERE email = ?
+SELECT 
+	users.user_id,
+    roles.name AS 'role',
+    users.first_name,
+    users.last_name,
+    users.email,
+    users.password,
+    subscriptions.status AS 'subscription status',
+    users.created_at,
+    users.updated_at
+FROM users users
+JOIN roles roles USING(role_id)
+JOIN subscriptions subscriptions USING (subscription_id)
+WHERE email = ?
 `
 
-func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error) {
+type GetUserByEmailRow struct {
+	UserID             int32
+	Role               RolesName
+	FirstName          string
+	LastName           string
+	Email              string
+	Password           string
+	SubscriptionStatus SubscriptionsStatus
+	CreatedAt          time.Time
+	UpdatedAt          time.Time
+}
+
+func (q *Queries) GetUserByEmail(ctx context.Context, email string) (GetUserByEmailRow, error) {
 	row := q.db.QueryRowContext(ctx, getUserByEmail, email)
-	var i User
+	var i GetUserByEmailRow
 	err := row.Scan(
 		&i.UserID,
-		&i.RoleID,
+		&i.Role,
 		&i.FirstName,
 		&i.LastName,
 		&i.Email,
 		&i.Password,
-		&i.SubscriptionID,
+		&i.SubscriptionStatus,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -75,20 +101,45 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT user_id, role_id, first_name, last_name, email, password, subscription_id, created_at, updated_at FROM users WHERE user_id = ?
+SELECT 
+	users.user_id,
+    roles.name AS 'role',
+    users.first_name,
+    users.last_name,
+    users.email,
+    users.password,
+    subscriptions.status AS 'subscription status',
+    users.created_at,
+    users.updated_at
+FROM users users
+JOIN roles roles USING(role_id)
+JOIN subscriptions subscriptions USING (subscription_id)
+WHERE user_id = ?
 `
 
-func (q *Queries) GetUserByID(ctx context.Context, userID int32) (User, error) {
+type GetUserByIDRow struct {
+	UserID             int32
+	Role               RolesName
+	FirstName          string
+	LastName           string
+	Email              string
+	Password           string
+	SubscriptionStatus SubscriptionsStatus
+	CreatedAt          time.Time
+	UpdatedAt          time.Time
+}
+
+func (q *Queries) GetUserByID(ctx context.Context, userID int32) (GetUserByIDRow, error) {
 	row := q.db.QueryRowContext(ctx, getUserByID, userID)
-	var i User
+	var i GetUserByIDRow
 	err := row.Scan(
 		&i.UserID,
-		&i.RoleID,
+		&i.Role,
 		&i.FirstName,
 		&i.LastName,
 		&i.Email,
 		&i.Password,
-		&i.SubscriptionID,
+		&i.SubscriptionStatus,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)

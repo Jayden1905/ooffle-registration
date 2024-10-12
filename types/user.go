@@ -3,26 +3,26 @@ package types
 import (
 	"context"
 	"time"
-
-	"github.com/jayden1905/event-registration-software/cmd/pkg/database"
 )
 
 type User struct {
-	ID        int32     `json:"id"`
-	FirstName string    `json:"first_name"`
-	LastName  string    `json:"last_name"`
-	Email     string    `json:"email"`
-	Password  string    `json:"password"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID           int32     `json:"id"`
+	FirstName    string    `json:"first_name"`
+	LastName     string    `json:"last_name"`
+	Role         string    `json:"role"`
+	Subscription string    `json:"subscription"`
+	Email        string    `json:"email"`
+	Password     string    `json:"password"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
 }
 
 type UserStore interface {
-	GetUserByEmail(email string) (*database.User, error)
-	GetUserByID(id int32) (*database.User, error)
+	GetUserByEmail(email string) (*User, error)
+	GetUserByID(id int32) (*User, error)
 	GetUserRoleByID(id int32) (string, error)
-	CreateUser(ctx context.Context, user *database.User) error
-	CreateSuperUser(ctx context.Context, user *database.User) error
+	CreateUser(ctx context.Context, user *User) error
+	CreateSuperUser(ctx context.Context, user *User) error
 	UpdateUserToSuperUser(ctx context.Context, id int32) error
 	UpdateUserToNormalUser(ctx context.Context, id int32) error
 }
@@ -39,14 +39,16 @@ type LoginUserPayload struct {
 	Password string `json:"password" validate:"required"`
 }
 
-func DatabaseUserToUser(u *database.User) *User {
+func DatabaseUserToUser(u *User) *User {
 	return &User{
-		ID:        int32(u.UserID),
-		FirstName: u.FirstName,
-		LastName:  u.LastName,
-		Email:     u.Email,
-		Password:  u.Password,
-		CreatedAt: u.CreatedAt,
-		UpdatedAt: u.UpdatedAt,
+		ID:           u.ID,
+		FirstName:    u.FirstName,
+		LastName:     u.LastName,
+		Role:         u.Role,
+		Subscription: u.Subscription,
+		Email:        u.Email,
+		Password:     u.Password,
+		CreatedAt:    u.CreatedAt,
+		UpdatedAt:    u.UpdatedAt,
 	}
 }

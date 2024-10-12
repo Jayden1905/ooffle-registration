@@ -5,7 +5,6 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 
-	"github.com/jayden1905/event-registration-software/cmd/pkg/database"
 	"github.com/jayden1905/event-registration-software/config"
 	"github.com/jayden1905/event-registration-software/service/auth"
 	"github.com/jayden1905/event-registration-software/types"
@@ -56,7 +55,7 @@ func (h *Handler) handleLogin(c *fiber.Ctx) error {
 	}
 
 	secret := []byte(config.Envs.JWTSecret)
-	token, err := auth.CreateJWT(secret, int(u.UserID))
+	token, err := auth.CreateJWT(secret, int(u.ID))
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -105,7 +104,7 @@ func (h *Handler) handleRegister(c *fiber.Ctx) error {
 	}
 
 	// Create a new user
-	err = h.store.CreateUser(c.Context(), &database.User{
+	err = h.store.CreateUser(c.Context(), &types.User{
 		FirstName: payload.FirstName,
 		LastName:  payload.LastName,
 		Email:     payload.Email,
@@ -162,7 +161,7 @@ func (h *Handler) handleCreateSuperUser(c *fiber.Ctx) error {
 		}
 
 		// check if user is already a super user
-		role, err := h.store.GetUserRoleByID(u.UserID)
+		role, err := h.store.GetUserRoleByID(u.ID)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": fmt.Sprintf("Error getting user role by id: %v", err)})
 		}
@@ -171,14 +170,14 @@ func (h *Handler) handleCreateSuperUser(c *fiber.Ctx) error {
 		}
 
 		// update user to super user
-		h.store.UpdateUserToSuperUser(c.Context(), u.UserID)
+		h.store.UpdateUserToSuperUser(c.Context(), u.ID)
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{
 			"role": role,
 		})
 	}
 
 	// Create a new super user
-	err = h.store.CreateSuperUser(c.Context(), &database.User{
+	err = h.store.CreateSuperUser(c.Context(), &types.User{
 		FirstName: payload.FirstName,
 		LastName:  payload.LastName,
 		Email:     payload.Email,

@@ -7,10 +7,36 @@ INSERT INTO users (role_id, first_name, last_name, email, password, subscription
 VALUES (1,?, ?, ?, ?, 1);
 
 -- name: GetUserByID :one
-SELECT * FROM users WHERE user_id = ?;
+SELECT 
+	users.user_id,
+    roles.name AS 'role',
+    users.first_name,
+    users.last_name,
+    users.email,
+    users.password,
+    subscriptions.status AS 'subscription status',
+    users.created_at,
+    users.updated_at
+FROM users users
+JOIN roles roles USING(role_id)
+JOIN subscriptions subscriptions USING (subscription_id)
+WHERE user_id = ?;
 
 -- name: GetUserByEmail :one 
-SELECT * FROM users WHERE email = ?;
+SELECT 
+	users.user_id,
+    roles.name AS 'role',
+    users.first_name,
+    users.last_name,
+    users.email,
+    users.password,
+    subscriptions.status AS 'subscription status',
+    users.created_at,
+    users.updated_at
+FROM users users
+JOIN roles roles USING(role_id)
+JOIN subscriptions subscriptions USING (subscription_id)
+WHERE email = ?;
 
 -- name: UpdateUserToSuperUser :exec
 UPDATE users SET role_id = 1 WHERE user_id = ?;

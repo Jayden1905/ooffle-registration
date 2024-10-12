@@ -75,7 +75,7 @@ func WithJWTAuth(handlerFunc fiber.Handler, store types.UserStore) fiber.Handler
 		}
 
 		// Set userID in context (using Fiber's Locals)
-		c.Locals(UserKey, u.UserID)
+		c.Locals(UserKey, u.ID)
 
 		// Call the next handler
 		return handlerFunc(c)
