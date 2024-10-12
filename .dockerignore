@@ -12,3 +12,8 @@ vendor/
 .git
 .idea
 *.log
+
+bin
+tmp
+
+*_test.go
