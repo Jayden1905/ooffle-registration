@@ -9,7 +9,9 @@ COPY . .
 
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /app/bin/event-registration-software ./cmd/main.go
 
-FROM alpine:3.18
+FROM alpine:latest
+
+RUN apk --no-cache add ca-certificates
 
 RUN apk add --no-cache bash curl
 
