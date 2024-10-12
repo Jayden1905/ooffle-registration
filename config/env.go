@@ -18,7 +18,6 @@ type Config struct {
 	DBHost                 string
 	JWTExpirationInSeconds int64
 	JWTSecret              string
-	CaCertPath             string
 }
 
 var Envs = initConfig()
@@ -38,7 +37,6 @@ func initConfig() Config {
 		DBName:                 getEnv("DB_NAME", "event"),
 		JWTSecret:              getEnv("JWT_SECRET", "not-secret-anymore?"),
 		JWTExpirationInSeconds: getEnvAsInt("JWT_EXP", 3600*24*7),
-		CaCertPath:             getEnv("CA_CERT_PATH", ""),
 	}
 }
 
