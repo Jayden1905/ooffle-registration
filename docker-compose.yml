@@ -4,9 +4,7 @@ services:
   app:
     build:
       context: .
-      dockerfile: Dockerfile.dev
-    volumes:
-      - .:/app
+      dockerfile: Dockerfile
     ports:
       - '8080:8080'
     environment:
@@ -19,19 +17,6 @@ services:
       - db
     networks:
       - app-network
-    deploy:
-      resources:
-        limits:
-          cpus: '0.50' # Limit CPU usage
-          memory: '512M' # Limit memory usage
-      restart_policy:
-        condition: on-failure # Restart if the app crashes
-    healthcheck:
-      test:
-        ['CMD-SHELL', 'curl -f http://localhost:8080/api/v1/health || exit 1']
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
   db:
     image: mysql:8.4.2
@@ -46,11 +31,6 @@ services:
       - mysql-data:/var/lib/mysql
     networks:
       - app-network
-    healthcheck:
-      test: ['CMD', 'mysqladmin', 'ping', '-h', '127.0.0.1']
-      interval: 30s
-      timeout: 10s
-      retries: 5
 
 networks:
   app-network:
