@@ -18,6 +18,7 @@ type User struct {
 }
 
 type UserStore interface {
+	GetAllUsers() ([]*User, error)
 	GetUserByEmail(email string) (*User, error)
 	GetUserByID(id int32) (*User, error)
 	GetUserRoleByID(id int32) (string, error)
@@ -37,18 +38,4 @@ type RegisterUserPayload struct {
 type LoginUserPayload struct {
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required"`
-}
-
-func DatabaseUserToUser(u *User) *User {
-	return &User{
-		ID:           u.ID,
-		FirstName:    u.FirstName,
-		LastName:     u.LastName,
-		Role:         u.Role,
-		Subscription: u.Subscription,
-		Email:        u.Email,
-		Password:     u.Password,
-		CreatedAt:    u.CreatedAt,
-		UpdatedAt:    u.UpdatedAt,
-	}
 }

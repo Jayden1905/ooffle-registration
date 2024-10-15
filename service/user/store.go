@@ -19,6 +19,33 @@ func NewStore(db *database.Queries) *Store {
 	return &Store{db: db}
 }
 
+// GetAllUsers fetches all users from the database
+func (s *Store) GetAllUsers() ([]*types.User, error) {
+	users, err := s.db.GetAllUsers(context.Background())
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert the database user to the user type
+	var allUsers []*types.User
+
+	for _, user := range users {
+		allUsers = append(allUsers, &types.User{
+			ID:           int32(user.UserID),
+			FirstName:    user.FirstName,
+			LastName:     user.LastName,
+			Role:         string(user.Role),
+			Subscription: string(user.SubscriptionStatus),
+			Email:        user.Email,
+			Password:     user.Password,
+			CreatedAt:    user.CreatedAt,
+			UpdatedAt:    user.UpdatedAt,
+		})
+	}
+
+	return allUsers, nil
+}
+
 // GetUserByEmail fetches a user by email from the database
 func (s *Store) GetUserByEmail(email string) (*types.User, error) {
 	user, err := s.db.GetUserByEmail(context.Background(), email) // Use the SQLC-generated method

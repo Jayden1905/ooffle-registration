@@ -49,12 +49,9 @@ func WithJWTAuth(handlerFunc fiber.Handler, store types.UserStore) fiber.Handler
 		// Validate the JWT token
 		token, err := validateToken(tokenString)
 		if err != nil {
-			log.Printf("error validating token: %v", err)
-			return permissionDenied(c)
-		}
-		if !token.Valid {
-			log.Printf("token is invalid")
-			return permissionDenied(c)
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"error": err.Error(),
+			})
 		}
 
 		// Extract the userID from JWT claims
@@ -93,12 +90,26 @@ func getTokenFromCookie(c *fiber.Ctx) (string, error) {
 
 // Helper function to validate a JWT token
 func validateToken(tokenString string) (*jwt.Token, error) {
-	return jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
+	token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
 		}
 		return []byte(config.Envs.JWTSecret), nil
 	})
+	// Check for any errors during parsing
+	if err != nil {
+		if ve, ok := err.(*jwt.ValidationError); ok {
+			// Check if the error was due to token expiration
+			if ve.Errors&jwt.ValidationErrorExpired != 0 {
+				return nil, fmt.Errorf("token has expired")
+			} else {
+				return nil, fmt.Errorf("token is invalid: %v", err)
+			}
+		}
+		return nil, fmt.Errorf("error parsing token: %v", err)
+	}
+
+	return token, nil
 }
 
 // Helper function to send a permission denied response in Fiber

@@ -41,7 +41,7 @@ func (s *apiConfig) Run() error {
 	// Define the api group
 	api := app.Group("/api/v1")
 
-	// Register the user routes
+	// Register the routes in v1 group
 	userHandler.RegisterRoutes(api)
 
 	app.Use("/health", func(c *fiber.Ctx) error {

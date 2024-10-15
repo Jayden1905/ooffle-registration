@@ -6,6 +6,21 @@ VALUES (2,?, ?, ?, ?, 2);
 INSERT INTO users (role_id, first_name, last_name, email, password, subscription_id)
 VALUES (1,?, ?, ?, ?, 1);
 
+-- name: GetAllUsers :many
+SELECT 
+	users.user_id,
+    roles.name AS 'role',
+    users.first_name,
+    users.last_name,
+    users.email,
+    users.password,
+    subscriptions.status AS 'subscription status',
+    users.created_at,
+    users.updated_at
+FROM users users
+JOIN roles roles USING(role_id)
+JOIN subscriptions subscriptions USING (subscription_id);
+
 -- name: GetUserByID :one
 SELECT 
 	users.user_id,

@@ -9,7 +9,7 @@ import (
 	"github.com/gofiber/fiber/v2/utils"
 	"golang.org/x/net/context"
 
-	"github.com/jayden1905/event-registration-software/cmd/pkg/database"
+	"github.com/jayden1905/event-registration-software/types"
 )
 
 func TestUserServiceHandlers(t *testing.T) {
@@ -46,14 +46,30 @@ func TestUserServiceHandlers(t *testing.T) {
 // Mock implementation of the UserStore interface
 type mockUserStore struct{}
 
-func (m *mockUserStore) GetUserByEmail(email string) (*database.User, error) {
-	return &database.User{}, nil
+func (m *mockUserStore) GetUserByEmail(email string) (*types.User, error) {
+	return &types.User{}, nil
 }
 
-func (m *mockUserStore) GetUserByID(id int32) (*database.User, error) {
-	return &database.User{}, nil
+func (m *mockUserStore) GetUserByID(id int32) (*types.User, error) {
+	return &types.User{}, nil
 }
 
-func (m *mockUserStore) CreateUser(ctx context.Context, user *database.User) error {
+func (m *mockUserStore) CreateUser(ctx context.Context, user *types.User) error {
+	return nil
+}
+
+func (m *mockUserStore) GetUserRoleByID(id int32) (string, error) {
+	return "", nil
+}
+
+func (m *mockUserStore) CreateSuperUser(ctx context.Context, user *types.User) error {
+	return nil
+}
+
+func (m *mockUserStore) UpdateUserToSuperUser(ctx context.Context, id int32) error {
+	return nil
+}
+
+func (m *mockUserStore) UpdateUserToNormalUser(ctx context.Context, id int32) error {
 	return nil
 }

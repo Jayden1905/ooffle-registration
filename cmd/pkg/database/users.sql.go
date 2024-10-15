@@ -54,6 +54,67 @@ func (q *Queries) CreateSuperUser(ctx context.Context, arg CreateSuperUserParams
 	return err
 }
 
+const getAllUsers = `-- name: GetAllUsers :many
+SELECT 
+	users.user_id,
+    roles.name AS 'role',
+    users.first_name,
+    users.last_name,
+    users.email,
+    users.password,
+    subscriptions.status AS 'subscription status',
+    users.created_at,
+    users.updated_at
+FROM users users
+JOIN roles roles USING(role_id)
+JOIN subscriptions subscriptions USING (subscription_id)
+`
+
+type GetAllUsersRow struct {
+	UserID             int32
+	Role               RolesName
+	FirstName          string
+	LastName           string
+	Email              string
+	Password           string
+	SubscriptionStatus SubscriptionsStatus
+	CreatedAt          time.Time
+	UpdatedAt          time.Time
+}
+
+func (q *Queries) GetAllUsers(ctx context.Context) ([]GetAllUsersRow, error) {
+	rows, err := q.db.QueryContext(ctx, getAllUsers)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetAllUsersRow
+	for rows.Next() {
+		var i GetAllUsersRow
+		if err := rows.Scan(
+			&i.UserID,
+			&i.Role,
+			&i.FirstName,
+			&i.LastName,
+			&i.Email,
+			&i.Password,
+			&i.SubscriptionStatus,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getUserByEmail = `-- name: GetUserByEmail :one
 SELECT 
 	users.user_id,
