@@ -41,9 +41,10 @@ func WithJWTAuth(handlerFunc fiber.Handler, store types.UserStore) fiber.Handler
 		tokenString, err := getTokenFromCookie(c)
 		if err != nil {
 			tokenString = c.Get("Authorization")
-			if tokenString == "" {
-				return permissionDenied(c)
-			}
+		}
+
+		if tokenString == "" {
+			return permissionDenied(c)
 		}
 
 		// Validate the JWT token
@@ -73,6 +74,32 @@ func WithJWTAuth(handlerFunc fiber.Handler, store types.UserStore) fiber.Handler
 
 		// Set userID in context (using Fiber's Locals)
 		c.Locals(UserKey, u.ID)
+
+		// Call the next handler
+		return handlerFunc(c)
+	}
+}
+
+// BlockIfAuthenticated is a middleware for Fiber that blocks the request if the user is authenticated.
+func BlockIfAuthenticated(handlerFunc fiber.Handler) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		// Get the token from cookies or Authorization header
+		tokenString, err := getTokenFromCookie(c)
+		if err != nil {
+			tokenString = c.Get("Authorization")
+		}
+
+		if tokenString == "" {
+			return handlerFunc(c)
+		}
+
+		// Validate the JWT token
+		token, err := validateToken(tokenString)
+
+		// If the token is valid, block the request
+		if err == nil && token.Valid {
+			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "User is already authenticated"})
+		}
 
 		// Call the next handler
 		return handlerFunc(c)
@@ -117,6 +144,7 @@ func permissionDenied(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "Permission denied"})
 }
 
+// GetUserIDFromContext extracts the userID from Fiber's context
 func GetUserIDFromContext(c *fiber.Ctx) int32 {
 	userID, ok := c.Locals(UserKey).(int32)
 	if !ok {

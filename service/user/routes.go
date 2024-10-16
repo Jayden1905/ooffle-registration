@@ -23,7 +23,7 @@ func NewHandler(store types.UserStore) *Handler {
 
 // RegisterRoutes for Fiber
 func (h *Handler) RegisterRoutes(router fiber.Router) {
-	router.Post("/user/login", h.handleLogin)
+	router.Post("/user/login", auth.BlockIfAuthenticated(h.handleLogin))
 	router.Post("/user/logout", h.handleLogout)
 	router.Post("/user/register", h.handleRegister)
 	router.Patch("/user/super-user", h.handleCreateSuperUser)
