@@ -19,7 +19,7 @@ func TestUserServiceHandlers(t *testing.T) {
 	app := fiber.New()
 
 	// Define routes
-	app.Get("/user", handler.handleGetUser)
+	app.Get("/current-user", handler.handleGetCurrentUser)
 
 	t.Run("should handle get user by token passed via cookie", func(t *testing.T) {
 		// Create a new request
@@ -27,9 +27,10 @@ func TestUserServiceHandlers(t *testing.T) {
 
 		// Set the cookie for the user token in the request
 		req.AddCookie(&http.Cookie{
-			Name:  "token",
-			Value: "valid-token",
-			Path:  "/",
+			Name:     "token",
+			Value:    "valid-token",
+			Path:     "/",
+			HttpOnly: true,
 		})
 
 		// Execute the test request
@@ -72,4 +73,8 @@ func (m *mockUserStore) UpdateUserToSuperUser(ctx context.Context, id int32) err
 
 func (m *mockUserStore) UpdateUserToNormalUser(ctx context.Context, id int32) error {
 	return nil
+}
+
+func (m *mockUserStore) GetAllUsers() ([]*types.User, error) {
+	return []*types.User{}, nil
 }

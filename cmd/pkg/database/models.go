@@ -96,6 +96,18 @@ func (ns NullSubscriptionsStatus) Value() (driver.Value, error) {
 	return string(ns.SubscriptionsStatus), nil
 }
 
+type Event struct {
+	EventID     int32
+	Title       string
+	Description string
+	StartDate   time.Time
+	EndDate     time.Time
+	Location    string
+	UserID      int32
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+}
+
 type Role struct {
 	RoleID int8
 	Name   RolesName

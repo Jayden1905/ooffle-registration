@@ -11,8 +11,15 @@ import (
 )
 
 const createNormalUser = `-- name: CreateNormalUser :exec
-INSERT INTO users (role_id, first_name, last_name, email, password, subscription_id)
-VALUES (2,?, ?, ?, ?, 2)
+INSERT INTO users (
+        role_id,
+        first_name,
+        last_name,
+        email,
+        password,
+        subscription_id
+    )
+VALUES (2, ?, ?, ?, ?, 2)
 `
 
 type CreateNormalUserParams struct {
@@ -33,8 +40,15 @@ func (q *Queries) CreateNormalUser(ctx context.Context, arg CreateNormalUserPara
 }
 
 const createSuperUser = `-- name: CreateSuperUser :exec
-INSERT INTO users (role_id, first_name, last_name, email, password, subscription_id)
-VALUES (1,?, ?, ?, ?, 1)
+INSERT INTO users (
+        role_id,
+        first_name,
+        last_name,
+        email,
+        password,
+        subscription_id
+    )
+VALUES (1, ?, ?, ?, ?, 1)
 `
 
 type CreateSuperUserParams struct {
@@ -54,9 +68,18 @@ func (q *Queries) CreateSuperUser(ctx context.Context, arg CreateSuperUserParams
 	return err
 }
 
+const deleteUserByID = `-- name: DeleteUserByID :exec
+DELETE FROM users
+WHERE user_id = ?
+`
+
+func (q *Queries) DeleteUserByID(ctx context.Context, userID int32) error {
+	_, err := q.db.ExecContext(ctx, deleteUserByID, userID)
+	return err
+}
+
 const getAllUsers = `-- name: GetAllUsers :many
-SELECT 
-	users.user_id,
+SELECT users.user_id,
     roles.name AS 'role',
     users.first_name,
     users.last_name,
@@ -66,8 +89,8 @@ SELECT
     users.created_at,
     users.updated_at
 FROM users users
-JOIN roles roles USING(role_id)
-JOIN subscriptions subscriptions USING (subscription_id)
+    JOIN roles roles USING(role_id)
+    JOIN subscriptions subscriptions USING (subscription_id)
 `
 
 type GetAllUsersRow struct {
@@ -116,8 +139,7 @@ func (q *Queries) GetAllUsers(ctx context.Context) ([]GetAllUsersRow, error) {
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT 
-	users.user_id,
+SELECT users.user_id,
     roles.name AS 'role',
     users.first_name,
     users.last_name,
@@ -127,8 +149,8 @@ SELECT
     users.created_at,
     users.updated_at
 FROM users users
-JOIN roles roles USING(role_id)
-JOIN subscriptions subscriptions USING (subscription_id)
+    JOIN roles roles USING(role_id)
+    JOIN subscriptions subscriptions USING (subscription_id)
 WHERE email = ?
 `
 
@@ -162,8 +184,7 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (GetUserByEm
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT 
-	users.user_id,
+SELECT users.user_id,
     roles.name AS 'role',
     users.first_name,
     users.last_name,
@@ -173,8 +194,8 @@ SELECT
     users.created_at,
     users.updated_at
 FROM users users
-JOIN roles roles USING(role_id)
-JOIN subscriptions subscriptions USING (subscription_id)
+    JOIN roles roles USING(role_id)
+    JOIN subscriptions subscriptions USING (subscription_id)
 WHERE user_id = ?
 `
 
@@ -210,7 +231,7 @@ func (q *Queries) GetUserByID(ctx context.Context, userID int32) (GetUserByIDRow
 const getUserRoleByUserID = `-- name: GetUserRoleByUserID :one
 SELECT roles.name
 FROM users users
-JOIN roles roles using(role_id)
+    JOIN roles roles using(role_id)
 WHERE user_id = ?
 `
 
@@ -221,8 +242,67 @@ func (q *Queries) GetUserRoleByUserID(ctx context.Context, userID int32) (RolesN
 	return name, err
 }
 
+const updateUserInformation = `-- name: UpdateUserInformation :exec
+UPDATE users
+SET first_name = ?,
+    last_name = ?,
+    email = ?
+WHERE user_id = ?
+`
+
+type UpdateUserInformationParams struct {
+	FirstName string
+	LastName  string
+	Email     string
+	UserID    int32
+}
+
+func (q *Queries) UpdateUserInformation(ctx context.Context, arg UpdateUserInformationParams) error {
+	_, err := q.db.ExecContext(ctx, updateUserInformation,
+		arg.FirstName,
+		arg.LastName,
+		arg.Email,
+		arg.UserID,
+	)
+	return err
+}
+
+const updateUserPassword = `-- name: UpdateUserPassword :exec
+UPDATE users
+SET password = ?
+WHERE user_id = ?
+`
+
+type UpdateUserPasswordParams struct {
+	Password string
+	UserID   int32
+}
+
+func (q *Queries) UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error {
+	_, err := q.db.ExecContext(ctx, updateUserPassword, arg.Password, arg.UserID)
+	return err
+}
+
+const updateUserSubscriptionStatus = `-- name: UpdateUserSubscriptionStatus :exec
+UPDATE users
+SET subscription_id = ?
+WHERE user_id = ?
+`
+
+type UpdateUserSubscriptionStatusParams struct {
+	SubscriptionID int8
+	UserID         int32
+}
+
+func (q *Queries) UpdateUserSubscriptionStatus(ctx context.Context, arg UpdateUserSubscriptionStatusParams) error {
+	_, err := q.db.ExecContext(ctx, updateUserSubscriptionStatus, arg.SubscriptionID, arg.UserID)
+	return err
+}
+
 const updateUserToNormalUser = `-- name: UpdateUserToNormalUser :exec
-UPDATE users SET role_id = 2 WHERE user_id = ?
+UPDATE users
+SET role_id = 2
+WHERE user_id = ?
 `
 
 func (q *Queries) UpdateUserToNormalUser(ctx context.Context, userID int32) error {
@@ -231,7 +311,9 @@ func (q *Queries) UpdateUserToNormalUser(ctx context.Context, userID int32) erro
 }
 
 const updateUserToSuperUser = `-- name: UpdateUserToSuperUser :exec
-UPDATE users SET role_id = 1 WHERE user_id = ?
+UPDATE users
+SET role_id = 1
+WHERE user_id = ?
 `
 
 func (q *Queries) UpdateUserToSuperUser(ctx context.Context, userID int32) error {

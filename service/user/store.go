@@ -153,3 +153,28 @@ func (s *Store) UpdateUserToNormalUser(ctx context.Context, id int32) error {
 
 	return nil
 }
+
+// UpdateUserInformation updates the user information in the database
+func (s *Store) UpdateUserInformation(ctx context.Context, user *types.User) error {
+	err := s.db.UpdateUserInformation(ctx, database.UpdateUserInformationParams{
+		UserID:    user.ID,
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
+		Email:     user.Email,
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// DeleteUserByID deletes a user by ID from the database
+func (s *Store) DeleteUserByID(ctx context.Context, id int32) error {
+	err := s.db.DeleteUserByID(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

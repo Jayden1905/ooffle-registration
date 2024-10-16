@@ -26,6 +26,8 @@ type UserStore interface {
 	CreateSuperUser(ctx context.Context, user *User) error
 	UpdateUserToSuperUser(ctx context.Context, id int32) error
 	UpdateUserToNormalUser(ctx context.Context, id int32) error
+	UpdateUserInformation(ctx context.Context, user *User) error
+	DeleteUserByID(ctx context.Context, id int32) error
 }
 
 type RegisterUserPayload struct {
@@ -38,4 +40,10 @@ type RegisterUserPayload struct {
 type LoginUserPayload struct {
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required"`
+}
+
+type UpdateUserInformationPayload struct {
+	FirstName string `json:"first_name" validate:"required"`
+	LastName  string `json:"last_name" validate:"required"`
+	Email     string `json:"email" validate:"required,email"`
 }
