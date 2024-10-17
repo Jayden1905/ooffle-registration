@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/golang-jwt/jwt/v4"
 
 	"github.com/jayden1905/event-registration-software/config"
 	"github.com/jayden1905/event-registration-software/service/auth"
@@ -23,8 +24,8 @@ func NewHandler(store types.UserStore) *Handler {
 
 // RegisterRoutes for Fiber
 func (h *Handler) RegisterRoutes(router fiber.Router) {
-	router.Post("/user/login", auth.BlockIfAuthenticated(h.handleLogin))
-	router.Post("/user/logout", h.handleLogout)
+	router.Post("/user/auth/login", auth.BlockIfAuthenticated(h.handleLogin))
+	router.Post("/user/auth/logout", h.handleLogout)
 	router.Post("/user/register", h.handleRegister)
 	router.Patch("/user/super-user", h.handleCreateSuperUser)
 	router.Put("/user/update-user/:id", auth.WithJWTAuth(h.handleUpdateUserInformation, h.store))
@@ -32,6 +33,7 @@ func (h *Handler) RegisterRoutes(router fiber.Router) {
 	router.Get("/users", auth.WithJWTAuth(h.handleGetAllUsers, h.store))
 	router.Get("/user/:id", auth.WithJWTAuth(h.handleGetUserByID, h.store))
 	router.Delete("/user/:id", auth.WithJWTAuth(h.handleDeleteUser, h.store))
+	router.Get("/user/auth/status", h.handleIsAuthenticated)
 }
 
 // Handler for registring a new user
@@ -112,13 +114,12 @@ func (h *Handler) handleLogin(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	// Return the token with HTTP-only cookie
 	c.Cookie(&fiber.Cookie{
 		Name:     "token",
 		Value:    token,
 		HTTPOnly: true,                     // Disallow JS access to the cookie
 		Secure:   config.Envs.ISProduction, // Set to true in production (HTTPS)
-		SameSite: "None",                   // Prevent CSRF attacks
+		SameSite: "Lax",                    // Prevent CSRF attacks
 		Path:     "/",                      // Valid for the entire site
 		MaxAge:   int(config.Envs.JWTExpirationInSeconds),
 	})
@@ -135,7 +136,7 @@ func (h *Handler) handleLogout(c *fiber.Ctx) error {
 		Expires:  time.Now().Add(-time.Hour),
 		HTTPOnly: true,                     // Disallow JS access to the cookie
 		Secure:   config.Envs.ISProduction, // Set to true in production (HTTPS)
-		SameSite: "None",                   // Prevent CSRF attacks
+		SameSite: "Lax",                    // Prevent CSRF attacks
 		Path:     "/",                      // Valid for the entire site
 	})
 
@@ -265,19 +266,6 @@ func (h *Handler) handleUpdateUserInformation(c *fiber.Ctx) error {
 		})
 	}
 
-	// Get user id from context
-	userID := auth.GetUserIDFromContext(c)
-
-	// Check if the user is super_user
-	superUser, err := utils.IsSuperUser(userID, h.store)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": fmt.Sprintf("Error getting user role by id: %v", err)})
-	}
-
-	if !superUser {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "Access denied"})
-	}
-
 	stringID := c.Params("id")
 
 	// convert id to int
@@ -290,9 +278,17 @@ func (h *Handler) handleUpdateUserInformation(c *fiber.Ctx) error {
 	id := int32(intID)
 
 	// Check if the user is exists in the database
-	_, err = h.store.GetUserByID(id)
+	user, err := h.store.GetUserByID(id)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": fmt.Sprintf("%v", err)})
+	}
+
+	// Get user id from context
+	userID := auth.GetUserIDFromContext(c)
+
+	// Check if the user is updating their own information
+	if user.ID != userID {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "You can only update your own information"})
 	}
 
 	// Update the user information
@@ -370,4 +366,53 @@ func (h *Handler) handleGetUserByID(c *fiber.Ctx) error {
 	}
 
 	return c.Status(fiber.StatusOK).JSON(u)
+}
+
+// Handler for checking if a user is authenticated
+func (h *Handler) handleIsAuthenticated(c *fiber.Ctx) error {
+	tokenString := c.Cookies("token")
+
+	if tokenString == "" {
+		// get token from Authorization header
+		tokenString = c.Get("Authorization")
+	}
+
+	if tokenString == "" {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Token is missing"})
+	}
+
+	token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
+		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
+		}
+		return []byte(config.Envs.JWTSecret), nil
+	})
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Error parsing token"})
+	}
+
+	if !token.Valid {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Token is invalid"})
+	}
+
+	// get user id from token
+	claims := token.Claims.(jwt.MapClaims)
+	str := claims["userID"].(string)
+
+	userIDInt, err := strconv.Atoi(str)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Error getting user id from token"})
+	}
+
+	userID := int32(userIDInt)
+
+	// get if user exists
+	user, err := h.store.GetUserByID(int32(userID))
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": fmt.Sprintf("Error getting user by id: %v", err)})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"user": user,
+	})
 }
