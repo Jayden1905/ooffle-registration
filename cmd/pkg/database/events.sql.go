@@ -43,6 +43,16 @@ func (q *Queries) CreateEvent(ctx context.Context, arg CreateEventParams) error 
 	return err
 }
 
+const deleteAllEventsByUserID = `-- name: DeleteAllEventsByUserID :exec
+DELETE FROM events
+WHERE user_id = ?
+`
+
+func (q *Queries) DeleteAllEventsByUserID(ctx context.Context, userID int32) error {
+	_, err := q.db.ExecContext(ctx, deleteAllEventsByUserID, userID)
+	return err
+}
+
 const deleteEventByID = `-- name: DeleteEventByID :exec
 DELETE FROM events
 WHERE event_id = ?
@@ -53,13 +63,14 @@ func (q *Queries) DeleteEventByID(ctx context.Context, eventID int32) error {
 	return err
 }
 
-const getAllEvents = `-- name: GetAllEvents :many
+const getAllEventsByUserID = `-- name: GetAllEventsByUserID :many
 SELECT event_id, title, description, start_date, end_date, location, user_id, created_at, updated_at
 FROM events
+WHERE user_id = ?
 `
 
-func (q *Queries) GetAllEvents(ctx context.Context) ([]Event, error) {
-	rows, err := q.db.QueryContext(ctx, getAllEvents)
+func (q *Queries) GetAllEventsByUserID(ctx context.Context, userID int32) ([]Event, error) {
+	rows, err := q.db.QueryContext(ctx, getAllEventsByUserID, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -89,6 +100,29 @@ func (q *Queries) GetAllEvents(ctx context.Context) ([]Event, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const getEventByID = `-- name: GetEventByID :one
+SELECT event_id, title, description, start_date, end_date, location, user_id, created_at, updated_at
+FROM events
+WHERE event_id = ?
+`
+
+func (q *Queries) GetEventByID(ctx context.Context, eventID int32) (Event, error) {
+	row := q.db.QueryRowContext(ctx, getEventByID, eventID)
+	var i Event
+	err := row.Scan(
+		&i.EventID,
+		&i.Title,
+		&i.Description,
+		&i.StartDate,
+		&i.EndDate,
+		&i.Location,
+		&i.UserID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }
 
 const getEventByTitle = `-- name: GetEventByTitle :one

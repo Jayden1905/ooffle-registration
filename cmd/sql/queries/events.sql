@@ -8,13 +8,6 @@ INSERT INTO events (
         user_id
     )
 VALUES (?, ?, ?, ?, ?, ?);
--- name: GetAllEvents :many
-SELECT *
-FROM events;
--- name: GetEventByTitle :one
-SELECT *
-FROM events
-WHERE title = ?;
 -- name: UpdateEventByID :exec
 UPDATE events
 SET title = ?,
@@ -26,3 +19,19 @@ WHERE event_id = ?;
 -- name: DeleteEventByID :exec
 DELETE FROM events
 WHERE event_id = ?;
+-- name: DeleteAllEventsByUserID :exec
+DELETE FROM events
+WHERE user_id = ?;
+-- name: GetAllEventsByUserID :many
+SELECT *
+FROM events
+WHERE user_id = ?;
+-- name: GetEventByTitle :one
+SELECT *
+FROM events
+WHERE title = ?;
+-- name: GetEventByID :one
+SELECT *
+FROM events
+WHERE event_id = ?;
+
