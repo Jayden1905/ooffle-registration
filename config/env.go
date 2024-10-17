@@ -9,7 +9,7 @@ import (
 )
 
 type Config struct {
-	PublicHost             string
+	PublicHosts            string
 	Port                   string
 	DBUser                 string
 	DBPasswd               string
@@ -27,11 +27,11 @@ func initConfig() Config {
 	godotenv.Load()
 
 	return Config{
-		PublicHost: getEnv("PUBLIC_HOST", "http://localhost"),
-		Port:       getEnv("PORT", "8080"),
-		DBUser:     getEnv("DB_USER", "root"),
-		DBPasswd:   getEnv("DB_PASSWD", "root"),
-		DBHost:     getEnv("DB_HOST", ""),
+		PublicHosts: getEnv("PUBLIC_HOSTS", "http://localhost"),
+		Port:        getEnv("PORT", "8080"),
+		DBUser:      getEnv("DB_USER", "root"),
+		DBPasswd:    getEnv("DB_PASSWD", "root"),
+		DBHost:      getEnv("DB_HOST", ""),
 		DBAddr: fmt.Sprintf(
 			"%s:%s", getEnv("DB_HOST", "127.0.0.1"), getEnv("DB_PORT", "3306"),
 		),
