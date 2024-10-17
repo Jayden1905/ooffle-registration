@@ -39,7 +39,7 @@ func WithJWTAuth(handlerFunc fiber.Handler, store types.UserStore) fiber.Handler
 	return func(c *fiber.Ctx) error {
 		// Get the token from cookies or Authorization header
 		tokenString, err := getTokenFromCookie(c)
-		if err != nil {
+		if err != nil || tokenString == "" {
 			tokenString = c.Get("Authorization")
 		}
 
@@ -85,7 +85,7 @@ func BlockIfAuthenticated(handlerFunc fiber.Handler) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		// Get the token from cookies or Authorization header
 		tokenString, err := getTokenFromCookie(c)
-		if err != nil {
+		if err != nil || tokenString == "" {
 			tokenString = c.Get("Authorization")
 		}
 
@@ -98,7 +98,7 @@ func BlockIfAuthenticated(handlerFunc fiber.Handler) fiber.Handler {
 
 		// If the token is valid, block the request
 		if err == nil && token.Valid {
-			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "User is already authenticated"})
+			return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{"error": "User is already authenticated"})
 		}
 
 		// Call the next handler
@@ -141,7 +141,7 @@ func validateToken(tokenString string) (*jwt.Token, error) {
 
 // Helper function to send a permission denied response in Fiber
 func permissionDenied(c *fiber.Ctx) error {
-	return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "Permission denied"})
+	return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Permission denied"})
 }
 
 // GetUserIDFromContext extracts the userID from Fiber's context

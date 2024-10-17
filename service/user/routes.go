@@ -116,10 +116,10 @@ func (h *Handler) handleLogin(c *fiber.Ctx) error {
 	c.Cookie(&fiber.Cookie{
 		Name:     "token",
 		Value:    token,
-		HTTPOnly: true,     // Disallow JS access to the cookie
-		Secure:   true,     // Set to true in production (HTTPS)
-		SameSite: "Strict", // Prevent CSRF attacks
-		Path:     "/",      // Valid for the entire site
+		HTTPOnly: true,                     // Disallow JS access to the cookie
+		Secure:   config.Envs.ISProduction, // Set to true in production (HTTPS)
+		SameSite: "None",                   // Prevent CSRF attacks
+		Path:     "/",                      // Valid for the entire site
 		MaxAge:   int(config.Envs.JWTExpirationInSeconds),
 	})
 
@@ -133,10 +133,10 @@ func (h *Handler) handleLogout(c *fiber.Ctx) error {
 		Name:     "token",
 		Value:    "",
 		Expires:  time.Now().Add(-time.Hour),
-		HTTPOnly: true,     // Disallow JS access to the cookie
-		Secure:   true,     // Set to true in production (HTTPS)
-		SameSite: "Strict", // Prevent CSRF attacks
-		Path:     "/",      // Valid for the entire site
+		HTTPOnly: true,                     // Disallow JS access to the cookie
+		Secure:   config.Envs.ISProduction, // Set to true in production (HTTPS)
+		SameSite: "None",                   // Prevent CSRF attacks
+		Path:     "/",                      // Valid for the entire site
 	})
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Logged out successfully"})

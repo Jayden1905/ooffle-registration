@@ -18,6 +18,7 @@ type Config struct {
 	DBHost                 string
 	JWTExpirationInSeconds int64
 	JWTSecret              string
+	ISProduction           bool
 }
 
 var Envs = initConfig()
@@ -37,6 +38,7 @@ func initConfig() Config {
 		DBName:                 getEnv("DB_NAME", "event"),
 		JWTSecret:              getEnv("JWT_SECRET", "not-secret-anymore?"),
 		JWTExpirationInSeconds: getEnvAsInt("JWT_EXP", 3600*24*7),
+		ISProduction:           getEnvAsBool("IS_PRODUCTION", false),
 	}
 }
 
@@ -56,6 +58,19 @@ func getEnvAsInt(key string, fallback int64) int64 {
 		}
 
 		return i
+	}
+
+	return fallback
+}
+
+func getEnvAsBool(key string, fallback bool) bool {
+	if value, ok := os.LookupEnv(key); ok {
+		b, err := strconv.ParseBool(value)
+		if err != nil {
+			return fallback
+		}
+
+		return b
 	}
 
 	return fallback

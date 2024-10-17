@@ -30,7 +30,7 @@ func (s *apiConfig) Run() error {
 	app.Use(cors.New(cors.Config{
 		AllowOrigins:     config.Envs.PublicHost,
 		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS",
-		AllowHeaders:     "Content-Type,Authorization",
+		AllowHeaders:     "Origin, Content-Type, Authorization, Accept",
 		AllowCredentials: true,
 	}))
 
