@@ -318,6 +318,17 @@ func (h *Handler) handleGetCurrentUser(c *fiber.Ctx) error {
 
 // Handler for getting all users by page
 func (h *Handler) handleGetUsersPaginated(c *fiber.Ctx) error {
+	userID := auth.GetUserIDFromContext(c)
+
+	// Checking if user have access
+	superUser, err := utils.IsSuperUser(userID, h.store)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": fmt.Sprintf("Error getting user role by id: %v", err)})
+	}
+	if !superUser {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "Access denied"})
+	}
+
 	const defaultPageSize = 10
 	const maxPageSize = 100
 
