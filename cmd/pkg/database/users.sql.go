@@ -78,7 +78,7 @@ func (q *Queries) DeleteUserByID(ctx context.Context, userID int32) error {
 	return err
 }
 
-const getAllUsers = `-- name: GetAllUsers :many
+const getAllUsersPaginated = `-- name: GetAllUsersPaginated :many
 SELECT users.user_id,
     roles.name AS 'role',
     users.first_name,
@@ -88,12 +88,19 @@ SELECT users.user_id,
     subscriptions.status AS 'subscription status',
     users.created_at,
     users.updated_at
-FROM users users
-    JOIN roles roles USING(role_id)
-    JOIN subscriptions subscriptions USING (subscription_id)
+FROM users
+    JOIN roles USING(role_id)
+    JOIN subscriptions USING (subscription_id)
+ORDER BY users.created_at DESC
+LIMIT ? OFFSET ?
 `
 
-type GetAllUsersRow struct {
+type GetAllUsersPaginatedParams struct {
+	Limit  int32
+	Offset int32
+}
+
+type GetAllUsersPaginatedRow struct {
 	UserID             int32
 	Role               RolesName
 	FirstName          string
@@ -105,15 +112,15 @@ type GetAllUsersRow struct {
 	UpdatedAt          time.Time
 }
 
-func (q *Queries) GetAllUsers(ctx context.Context) ([]GetAllUsersRow, error) {
-	rows, err := q.db.QueryContext(ctx, getAllUsers)
+func (q *Queries) GetAllUsersPaginated(ctx context.Context, arg GetAllUsersPaginatedParams) ([]GetAllUsersPaginatedRow, error) {
+	rows, err := q.db.QueryContext(ctx, getAllUsersPaginated, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GetAllUsersRow
+	var items []GetAllUsersPaginatedRow
 	for rows.Next() {
-		var i GetAllUsersRow
+		var i GetAllUsersPaginatedRow
 		if err := rows.Scan(
 			&i.UserID,
 			&i.Role,

@@ -18,7 +18,7 @@ INSERT INTO users (
         subscription_id
     )
 VALUES (1, ?, ?, ?, ?, 1);
--- name: GetAllUsers :many
+-- name: GetAllUsersPaginated :many
 SELECT users.user_id,
     roles.name AS 'role',
     users.first_name,
@@ -28,9 +28,11 @@ SELECT users.user_id,
     subscriptions.status AS 'subscription status',
     users.created_at,
     users.updated_at
-FROM users users
-    JOIN roles roles USING(role_id)
-    JOIN subscriptions subscriptions USING (subscription_id);
+FROM users
+    JOIN roles USING(role_id)
+    JOIN subscriptions USING (subscription_id)
+ORDER BY users.created_at DESC
+LIMIT ? OFFSET ?;
 -- name: GetUserByID :one
 SELECT users.user_id,
     roles.name AS 'role',

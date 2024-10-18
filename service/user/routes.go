@@ -30,7 +30,7 @@ func (h *Handler) RegisterRoutes(router fiber.Router) {
 	router.Patch("/user/super-user", h.handleCreateSuperUser)
 	router.Put("/user/update-user/:id", auth.WithJWTAuth(h.handleUpdateUserInformation, h.store))
 	router.Get("/user/current-user", auth.WithJWTAuth(h.handleGetCurrentUser, h.store))
-	router.Get("/users", auth.WithJWTAuth(h.handleGetAllUsers, h.store))
+	router.Get("/users", auth.WithJWTAuth(h.handleGetUsersPaginated, h.store))
 	router.Get("/user/:id", auth.WithJWTAuth(h.handleGetUserByID, h.store))
 	router.Delete("/user/:id", auth.WithJWTAuth(h.handleDeleteUser, h.store))
 	router.Get("/user/auth/status", h.handleIsAuthenticated)
@@ -316,22 +316,34 @@ func (h *Handler) handleGetCurrentUser(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(u)
 }
 
-// Handler for getting all users
-func (h *Handler) handleGetAllUsers(c *fiber.Ctx) error {
-	userID := auth.GetUserIDFromContext(c)
+// Handler for getting all users by page
+func (h *Handler) handleGetUsersPaginated(c *fiber.Ctx) error {
+	const defaultPageSize = 10
+	const maxPageSize = 100
 
-	// check if user is a super user
-	superUser, err := utils.IsSuperUser(userID, h.store)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": fmt.Sprintf("Error getting user role by id: %v", err)})
-	}
-	if !superUser {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "Access denied"})
+	pageStr := c.Query("page")
+	pageSizeStr := c.Query("page_size")
+
+	page := 1
+	pageSize := defaultPageSize
+
+	// Parse page if provided
+	if pageStr != "" {
+		if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
+			page = p
+		}
 	}
 
-	users, err := h.store.GetAllUsers()
+	// Parse pageSize if provided
+	if pageSizeStr != "" {
+		if ps, err := strconv.Atoi(pageSizeStr); err == nil && ps > 0 && ps <= maxPageSize {
+			pageSize = ps
+		}
+	}
+
+	users, err := h.store.GetUsersPaginated(int32(page), int32(pageSize))
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": fmt.Sprintf("Error getting all users: %v", err)})
+		return c.Status(fiber.StatusBadRequest).JSON("Error getting users by page and page size")
 	}
 
 	return c.Status(fiber.StatusOK).JSON(users)

@@ -19,9 +19,13 @@ func NewStore(db *database.Queries) *Store {
 	return &Store{db: db}
 }
 
-// GetAllUsers fetches all users from the database
-func (s *Store) GetAllUsers() ([]*types.User, error) {
-	users, err := s.db.GetAllUsers(context.Background())
+// GetUsersPaginated fetches users by page from the database
+func (s *Store) GetUsersPaginated(page int32, pageSize int32) ([]*types.User, error) {
+	offset := (page - 1) * pageSize
+	users, err := s.db.GetAllUsersPaginated(context.Background(), database.GetAllUsersPaginatedParams{
+		Limit:  pageSize,
+		Offset: offset,
+	})
 	if err != nil {
 		return nil, err
 	}

@@ -18,7 +18,7 @@ type User struct {
 }
 
 type UserStore interface {
-	GetAllUsers() ([]*User, error)
+	GetUsersPaginated(page int32, pageSize int32) ([]*User, error)
 	GetUserByEmail(email string) (*User, error)
 	GetUserByID(id int32) (*User, error)
 	GetUserRoleByID(id int32) (string, error)
