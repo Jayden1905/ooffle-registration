@@ -128,4 +128,5 @@ type User struct {
 	SubscriptionID int8
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
+	Verify         bool
 }

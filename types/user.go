@@ -13,6 +13,7 @@ type User struct {
 	Subscription string    `json:"subscription"`
 	Email        string    `json:"email"`
 	Password     string    `json:"password"`
+	Verify       bool      `json:"verify"`
 	CreatedAt    time.Time `json:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at"`
 }
@@ -27,6 +28,7 @@ type UserStore interface {
 	UpdateUserToSuperUser(ctx context.Context, id int32) error
 	UpdateUserToNormalUser(ctx context.Context, id int32) error
 	UpdateUserInformation(ctx context.Context, user *User) error
+	UpdateUserVerification(ctx context.Context, id int32) error
 	DeleteUserByID(ctx context.Context, id int32) error
 }
 

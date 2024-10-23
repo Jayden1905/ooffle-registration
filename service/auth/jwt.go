@@ -34,6 +34,19 @@ func CreateJWT(secret []byte, userID int) (string, error) {
 	return tokenString, nil
 }
 
+// CreateVerificationToken generates a new JWT token with the given secret and userID.
+func GenerateVerificationToken(email string) (string, error) {
+	claims := jwt.MapClaims{
+		"email": email,
+		"exp":   time.Now().Add(24 * time.Hour).Unix(), // Token expires in 24 hours
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	secret := []byte(config.Envs.JWTSecret)
+
+	return token.SignedString(secret)
+}
+
 // WithJWTAuth is a middleware for Fiber that validates the JWT token.
 func WithJWTAuth(handlerFunc fiber.Handler, store types.UserStore) fiber.Handler {
 	return func(c *fiber.Ctx) error {
@@ -48,7 +61,7 @@ func WithJWTAuth(handlerFunc fiber.Handler, store types.UserStore) fiber.Handler
 		}
 
 		// Validate the JWT token
-		token, err := validateToken(tokenString)
+		token, err := ValidateToken(tokenString)
 		if err != nil {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"error": err.Error(),
@@ -94,7 +107,7 @@ func BlockIfAuthenticated(handlerFunc fiber.Handler) fiber.Handler {
 		}
 
 		// Validate the JWT token
-		token, err := validateToken(tokenString)
+		token, err := ValidateToken(tokenString)
 
 		// If the token is valid, block the request
 		if err == nil && token.Valid {
@@ -115,8 +128,33 @@ func getTokenFromCookie(c *fiber.Ctx) (string, error) {
 	return token, nil
 }
 
+// Helper function to validate the verification token
+func ValidateVerificationToken(tokenString string) (string, error) {
+	token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
+		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
+		}
+		return []byte(config.Envs.JWTSecret), nil
+	})
+	if err != nil {
+		return "", fmt.Errorf("error parsing token: %v", err)
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return "", fmt.Errorf("error parsing claims")
+	}
+
+	email, ok := claims["email"].(string)
+	if !ok {
+		return "", fmt.Errorf("error parsing email")
+	}
+
+	return email, nil
+}
+
 // Helper function to validate a JWT token
-func validateToken(tokenString string) (*jwt.Token, error) {
+func ValidateToken(tokenString string) (*jwt.Token, error) {
 	token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])

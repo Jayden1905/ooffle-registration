@@ -25,6 +25,7 @@ SELECT users.user_id,
     users.last_name,
     users.email,
     users.password,
+    users.verify,
     subscriptions.status AS 'subscription status',
     users.created_at,
     users.updated_at
@@ -40,6 +41,7 @@ SELECT users.user_id,
     users.last_name,
     users.email,
     users.password,
+    users.verify,
     subscriptions.status AS 'subscription status',
     users.created_at,
     users.updated_at
@@ -55,6 +57,7 @@ SELECT users.user_id,
     users.email,
     users.password,
     subscriptions.status AS 'subscription status',
+    users.verify,
     users.created_at,
     users.updated_at
 FROM users users
@@ -90,4 +93,8 @@ SET password = ?
 WHERE user_id = ?;
 -- name: DeleteUserByID :exec
 DELETE FROM users
+WHERE user_id = ?;
+-- name: UpdateUserVerificationStatus :exec
+UPDATE users
+SET verify = ?
 WHERE user_id = ?;

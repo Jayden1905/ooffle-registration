@@ -2,10 +2,7 @@ module github.com/jayden1905/event-registration-software
 
 go 1.23.1
 
-require (
-	github.com/go-sql-driver/mysql v1.8.1
-	github.com/jayden1905/event-registration-software v0.0.0-20241010104147-8a7c7563eb38
-)
+require github.com/go-sql-driver/mysql v1.8.1
 
 require (
 	github.com/andybalholm/brotli v1.0.5 // indirect
@@ -15,9 +12,13 @@ require (
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-runewidth v0.0.15 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
+	github.com/sendgrid/rest v2.6.9+incompatible // indirect
+	github.com/sendgrid/sendgrid-go v3.16.0+incompatible // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.51.0 // indirect
 	github.com/valyala/tcplisten v1.0.0 // indirect
+	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
+	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df // indirect
 )
 
 require (

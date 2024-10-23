@@ -42,6 +42,7 @@ func (s *Store) GetUsersPaginated(page int32, pageSize int32) ([]*types.User, er
 			Subscription: string(user.SubscriptionStatus),
 			Email:        user.Email,
 			Password:     user.Password,
+			Verify:       user.Verify,
 			CreatedAt:    user.CreatedAt,
 			UpdatedAt:    user.UpdatedAt,
 		})
@@ -68,6 +69,7 @@ func (s *Store) GetUserByEmail(email string) (*types.User, error) {
 		Subscription: string(user.SubscriptionStatus),
 		Email:        user.Email,
 		Password:     user.Password,
+		Verify:       user.Verify,
 		CreatedAt:    user.CreatedAt,
 		UpdatedAt:    user.UpdatedAt,
 	}, nil
@@ -91,6 +93,7 @@ func (s *Store) GetUserByID(id int32) (*types.User, error) {
 		Subscription: string(user.SubscriptionStatus),
 		Email:        user.Email,
 		Password:     user.Password,
+		Verify:       user.Verify,
 		CreatedAt:    user.CreatedAt,
 		UpdatedAt:    user.UpdatedAt,
 	}, nil
@@ -165,6 +168,19 @@ func (s *Store) UpdateUserInformation(ctx context.Context, user *types.User) err
 		FirstName: user.FirstName,
 		LastName:  user.LastName,
 		Email:     user.Email,
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// UpdateUserVerification updates the user verification status in the database
+func (s *Store) UpdateUserVerification(ctx context.Context, id int32) error {
+	err := s.db.UpdateUserVerificationStatus(ctx, database.UpdateUserVerificationStatusParams{
+		Verify: true,
+		UserID: id,
 	})
 	if err != nil {
 		return err

@@ -9,6 +9,7 @@ import (
 
 	"github.com/jayden1905/event-registration-software/cmd/pkg/database"
 	"github.com/jayden1905/event-registration-software/config"
+	"github.com/jayden1905/event-registration-software/service/email"
 	"github.com/jayden1905/event-registration-software/service/event"
 	"github.com/jayden1905/event-registration-software/service/user"
 )
@@ -39,7 +40,8 @@ func (s *apiConfig) Run() error {
 
 	// Define the user store and handler
 	userStore := user.NewStore(s.db)
-	userHandler := user.NewHandler(userStore)
+	mailer := email.NewEmailService()
+	userHandler := user.NewHandler(userStore, mailer)
 
 	// Define the event store and handler
 	eventStore := event.NewStore(s.db)

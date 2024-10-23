@@ -19,6 +19,11 @@ type Config struct {
 	JWTExpirationInSeconds int64
 	JWTSecret              string
 	ISProduction           bool
+	SMPTHost               string
+	SMTPPort               string
+	SMTPUsername           string
+	SMTPPassword           string
+	EMAILFrom              string
 }
 
 var Envs = initConfig()
@@ -39,6 +44,11 @@ func initConfig() Config {
 		JWTSecret:              getEnv("JWT_SECRET", "not-secret-anymore?"),
 		JWTExpirationInSeconds: getEnvAsInt("JWT_EXP", 3600*24*7),
 		ISProduction:           getEnvAsBool("IS_PRODUCTION", false),
+		SMPTHost:               getEnv("SMTP_HOST", ""),
+		SMTPPort:               getEnv("SMTP_PORT", ""),
+		SMTPUsername:           getEnv("SMTP_USERNAME", ""),
+		SMTPPassword:           getEnv("SMTP_PASSWORD", ""),
+		EMAILFrom:              getEnv("EMAIL_FROM", ""),
 	}
 }
 

@@ -10,16 +10,18 @@ import (
 
 	"github.com/jayden1905/event-registration-software/config"
 	"github.com/jayden1905/event-registration-software/service/auth"
+	"github.com/jayden1905/event-registration-software/service/email"
 	"github.com/jayden1905/event-registration-software/types"
 	"github.com/jayden1905/event-registration-software/utils"
 )
 
 type Handler struct {
-	store types.UserStore
+	store  types.UserStore
+	mailer email.Mailer
 }
 
-func NewHandler(store types.UserStore) *Handler {
-	return &Handler{store: store}
+func NewHandler(store types.UserStore, mailer email.Mailer) *Handler {
+	return &Handler{store: store, mailer: mailer}
 }
 
 // RegisterRoutes for Fiber
@@ -34,9 +36,10 @@ func (h *Handler) RegisterRoutes(router fiber.Router) {
 	router.Get("/user/:id", auth.WithJWTAuth(h.handleGetUserByID, h.store))
 	router.Delete("/user/:id", auth.WithJWTAuth(h.handleDeleteUser, h.store))
 	router.Get("/user/auth/status", h.handleIsAuthenticated)
+	router.Get("/user/verify/email", h.handleVerifyAccount)
 }
 
-// Handler for registring a new user
+// Handler for registering a new user
 func (h *Handler) handleRegister(c *fiber.Ctx) error {
 	// Parse JSON payload
 	var payload types.RegisterUserPayload
@@ -47,7 +50,6 @@ func (h *Handler) handleRegister(c *fiber.Ctx) error {
 	// Validate the payload
 	invalidFields, validationErr := utils.ValidatePayload(payload)
 	if validationErr != nil {
-		// Return the invalid fields if validation fails
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error":          "Invalid payload",
 			"invalid_fields": invalidFields,
@@ -66,7 +68,7 @@ func (h *Handler) handleRegister(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Error hashing password"})
 	}
 
-	// Create a new user
+	// Create a new user with unverified status
 	err = h.store.CreateUser(c.Context(), &types.User{
 		FirstName: payload.FirstName,
 		LastName:  payload.LastName,
@@ -77,7 +79,57 @@ func (h *Handler) handleRegister(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	return c.Status(fiber.StatusCreated).JSON(fiber.Map{"message": "User registered successfully"})
+	// Generate a verification token
+	token, err := auth.GenerateVerificationToken(payload.Email)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	// Send email asynchronously
+	go func() {
+		err = h.mailer.SendVerificationEmail(payload.Email, token)
+		if err != nil {
+			fmt.Printf("Error sending verification email: %v\n", err)
+		}
+	}()
+
+	// Return success response
+	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
+		"message": "User registered successfully",
+		"email":   payload.Email,
+		"status":  "verification email sent",
+	})
+}
+
+// Handler for verifying a user
+func (h *Handler) handleVerifyAccount(c *fiber.Ctx) error {
+	tokenString := c.Query("token")
+	if tokenString == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Token is missing"})
+	}
+
+	// Validate the verification token and return email
+	email, err := auth.ValidateVerificationToken(tokenString)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": fmt.Sprintf("Error validating verification token: %v", err)})
+	}
+
+	// Get the user by email
+	user, err := h.store.GetUserByEmail(email)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": fmt.Sprintf("Error getting user by email: %v", err)})
+	}
+
+	if user.Verify {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "User is already verified"})
+	}
+
+	// Update the user verification status
+	if err := h.store.UpdateUserVerification(c.Context(), user.ID); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": fmt.Sprintf("Error updating user verification status: %v", err)})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "User verified successfully"})
 }
 
 // Hanlder for login

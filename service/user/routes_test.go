@@ -51,6 +51,10 @@ func (m *mockUserStore) GetUserByEmail(email string) (*types.User, error) {
 	return &types.User{}, nil
 }
 
+func (m *mockUserStore) GetUsersPaginated(page int32, pageSize int32) ([]*types.User, error) {
+	return []*types.User{}, nil
+}
+
 func (m *mockUserStore) GetUserByID(id int32) (*types.User, error) {
 	return &types.User{}, nil
 }
@@ -72,6 +76,14 @@ func (m *mockUserStore) UpdateUserToSuperUser(ctx context.Context, id int32) err
 }
 
 func (m *mockUserStore) UpdateUserToNormalUser(ctx context.Context, id int32) error {
+	return nil
+}
+
+func (m *mockUserStore) UpdateUserInformation(ctx context.Context, user *types.User) error {
+	return nil
+}
+
+func (m *mockUserStore) DeleteUserByID(ctx context.Context, id int32) error {
 	return nil
 }
 

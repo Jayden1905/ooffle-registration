@@ -85,6 +85,7 @@ SELECT users.user_id,
     users.last_name,
     users.email,
     users.password,
+    users.verify,
     subscriptions.status AS 'subscription status',
     users.created_at,
     users.updated_at
@@ -107,6 +108,7 @@ type GetAllUsersPaginatedRow struct {
 	LastName           string
 	Email              string
 	Password           string
+	Verify             bool
 	SubscriptionStatus SubscriptionsStatus
 	CreatedAt          time.Time
 	UpdatedAt          time.Time
@@ -128,6 +130,7 @@ func (q *Queries) GetAllUsersPaginated(ctx context.Context, arg GetAllUsersPagin
 			&i.LastName,
 			&i.Email,
 			&i.Password,
+			&i.Verify,
 			&i.SubscriptionStatus,
 			&i.CreatedAt,
 			&i.UpdatedAt,
@@ -153,6 +156,7 @@ SELECT users.user_id,
     users.email,
     users.password,
     subscriptions.status AS 'subscription status',
+    users.verify,
     users.created_at,
     users.updated_at
 FROM users users
@@ -169,6 +173,7 @@ type GetUserByEmailRow struct {
 	Email              string
 	Password           string
 	SubscriptionStatus SubscriptionsStatus
+	Verify             bool
 	CreatedAt          time.Time
 	UpdatedAt          time.Time
 }
@@ -184,6 +189,7 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (GetUserByEm
 		&i.Email,
 		&i.Password,
 		&i.SubscriptionStatus,
+		&i.Verify,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -197,6 +203,7 @@ SELECT users.user_id,
     users.last_name,
     users.email,
     users.password,
+    users.verify,
     subscriptions.status AS 'subscription status',
     users.created_at,
     users.updated_at
@@ -213,6 +220,7 @@ type GetUserByIDRow struct {
 	LastName           string
 	Email              string
 	Password           string
+	Verify             bool
 	SubscriptionStatus SubscriptionsStatus
 	CreatedAt          time.Time
 	UpdatedAt          time.Time
@@ -228,6 +236,7 @@ func (q *Queries) GetUserByID(ctx context.Context, userID int32) (GetUserByIDRow
 		&i.LastName,
 		&i.Email,
 		&i.Password,
+		&i.Verify,
 		&i.SubscriptionStatus,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -325,5 +334,21 @@ WHERE user_id = ?
 
 func (q *Queries) UpdateUserToSuperUser(ctx context.Context, userID int32) error {
 	_, err := q.db.ExecContext(ctx, updateUserToSuperUser, userID)
+	return err
+}
+
+const updateUserVerificationStatus = `-- name: UpdateUserVerificationStatus :exec
+UPDATE users
+SET verify = ?
+WHERE user_id = ?
+`
+
+type UpdateUserVerificationStatusParams struct {
+	Verify bool
+	UserID int32
+}
+
+func (q *Queries) UpdateUserVerificationStatus(ctx context.Context, arg UpdateUserVerificationStatusParams) error {
+	_, err := q.db.ExecContext(ctx, updateUserVerificationStatus, arg.Verify, arg.UserID)
 	return err
 }
