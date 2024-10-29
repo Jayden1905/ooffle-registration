@@ -49,8 +49,10 @@ func (h *Handler) handleGetAttendeesPaginated(c *fiber.Ctx) error {
 		})
 	}
 
-	const defaultPageSize = 10
-	const maxPageSize = 100
+	const (
+		defaultPageSize = 10
+		maxPageSize     = 100
+	)
 
 	pageStr := c.Query("page")
 	pageSizeStr := c.Query("page_size")

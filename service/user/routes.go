@@ -381,8 +381,10 @@ func (h *Handler) handleGetUsersPaginated(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "Access denied"})
 	}
 
-	const defaultPageSize = 10
-	const maxPageSize = 100
+	const (
+		defaultPageSize = 10
+		maxPageSize     = 100
+	)
 
 	pageStr := c.Query("page")
 	pageSizeStr := c.Query("page_size")
