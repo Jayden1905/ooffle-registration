@@ -129,7 +129,7 @@ func (h *Handler) handleVerifyAccount(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": fmt.Sprintf("Error updating user verification status: %v", err)})
 	}
 
-	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "User verified successfully"})
+	return c.Redirect(config.Envs.PublicHost+"/", fiber.StatusSeeOther)
 }
 
 // Hanlder for login

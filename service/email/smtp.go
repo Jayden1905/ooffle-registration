@@ -38,7 +38,7 @@ func (es *EmailService) SendVerificationEmail(toEmail string, token string) erro
 	// Create the HTML email body
 	subject := "Subject: Verify Your Account\r\n"
 	contentType := "MIME-Version: 1.0\r\nContent-Type: text/html; charset=\"UTF-8\";\r\n"
-	body := fmt.Sprintf(`<html><body><p>Please verify your account by clicking the link below:</p><a href="%s">Verify Your Account</a></body></html>`, verificationLink)
+	body := fmt.Sprintf(`<html><body><p>Verify your account:</p><a href="%s">Verify Your Account</a></body></html>`, verificationLink)
 	msg := []byte(subject + contentType + "\r\n" + body)
 
 	// Send the email

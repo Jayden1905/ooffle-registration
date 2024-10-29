@@ -5,10 +5,53 @@
 package database
 
 import (
+	"database/sql"
 	"database/sql/driver"
 	"fmt"
 	"time"
 )
+
+type AttendeesAttendence string
+
+const (
+	AttendeesAttendenceYes AttendeesAttendence = "Yes"
+	AttendeesAttendenceNo  AttendeesAttendence = "No"
+)
+
+func (e *AttendeesAttendence) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = AttendeesAttendence(s)
+	case string:
+		*e = AttendeesAttendence(s)
+	default:
+		return fmt.Errorf("unsupported scan type for AttendeesAttendence: %T", src)
+	}
+	return nil
+}
+
+type NullAttendeesAttendence struct {
+	AttendeesAttendence AttendeesAttendence
+	Valid               bool // Valid is true if AttendeesAttendence is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullAttendeesAttendence) Scan(value interface{}) error {
+	if value == nil {
+		ns.AttendeesAttendence, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.AttendeesAttendence.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullAttendeesAttendence) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.AttendeesAttendence), nil
+}
 
 type RolesName string
 
@@ -94,6 +137,28 @@ func (ns NullSubscriptionsStatus) Value() (driver.Value, error) {
 		return nil, nil
 	}
 	return string(ns.SubscriptionsStatus), nil
+}
+
+type Attendee struct {
+	ID          int32
+	FirstName   string
+	LastName    string
+	Email       string
+	QrCode      sql.NullString
+	CompanyName sql.NullString
+	Title       sql.NullString
+	TableNo     sql.NullInt32
+	Role        sql.NullString
+	Attendence  NullAttendeesAttendence
+	EventID     int32
+}
+
+type AttendeesCustomField struct {
+	ID         int32
+	AttendeeID int32
+	FieldName  sql.NullString
+	FieldValue sql.NullString
+	FieldType  sql.NullString
 }
 
 type Event struct {

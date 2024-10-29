@@ -9,6 +9,7 @@ import (
 
 	"github.com/jayden1905/event-registration-software/cmd/pkg/database"
 	"github.com/jayden1905/event-registration-software/config"
+	"github.com/jayden1905/event-registration-software/service/attendee"
 	"github.com/jayden1905/event-registration-software/service/email"
 	"github.com/jayden1905/event-registration-software/service/event"
 	"github.com/jayden1905/event-registration-software/service/user"
@@ -30,13 +31,13 @@ func (s *apiConfig) Run() error {
 	app := fiber.New()
 
 	app.Use(cors.New(cors.Config{
-		AllowOrigins:     config.Envs.PublicHosts,
+		AllowOrigins:     config.Envs.PublicHost,
 		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS",
 		AllowHeaders:     "Origin, Content-Type, Authorization, Accept",
 		AllowCredentials: true,
 	}))
-	// Define the api group
-	api := app.Group("/api/v1")
+	// Define the apiV1 group
+	apiV1 := app.Group("/api/v1")
 
 	// Define the user store and handler
 	userStore := user.NewStore(s.db)
@@ -47,9 +48,14 @@ func (s *apiConfig) Run() error {
 	eventStore := event.NewStore(s.db)
 	eventHandler := event.NewHandler(eventStore, userStore)
 
+	// Define the attendee store and handler
+	attendeeStore := attendee.NewStore(s.db)
+	attendeeHandler := attendee.NewHandler(attendeeStore, eventStore, userStore)
+
 	// Register the routes in v1 group
-	userHandler.RegisterRoutes(api)
-	eventHandler.RegisterRoutes(api)
+	userHandler.RegisterRoutes(apiV1)
+	eventHandler.RegisterRoutes(apiV1)
+	attendeeHandler.RegisterRoutes(apiV1)
 
 	app.Use("/health", func(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{"status": "ok"})

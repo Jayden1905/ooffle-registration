@@ -25,7 +25,7 @@ func (h *Handler) RegisterRoutes(router fiber.Router) {
 	router.Post("/event/create", auth.WithJWTAuth(h.handleCreateEvent, h.userStore))
 	router.Put("/event/update/:id", auth.WithJWTAuth(h.handleUpdateEvent, h.userStore))
 	router.Delete("/event/delete/:id", auth.WithJWTAuth(h.handleDeleteEventByEventID, h.userStore))
-	// router.Delete("/events/delete", auth.WithJWTAuth(h.handleDeleteAllEvents, h.userStore))
+	router.Delete("/events/delete-all", auth.WithJWTAuth(h.handleDeleteAllEvents, h.userStore))
 }
 
 // handleGetAllEvents fetches all events from the database

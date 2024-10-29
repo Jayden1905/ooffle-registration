@@ -136,7 +136,16 @@ func ValidateVerificationToken(tokenString string) (string, error) {
 		}
 		return []byte(config.Envs.JWTSecret), nil
 	})
+	// Check for any errors during parsing
 	if err != nil {
+		if ve, ok := err.(*jwt.ValidationError); ok {
+			// Check if the error was due to token expiration
+			if ve.Errors&jwt.ValidationErrorExpired != 0 {
+				return "", fmt.Errorf("token has expired")
+			} else {
+				return "", fmt.Errorf("token is invalid: %v", err)
+			}
+		}
 		return "", fmt.Errorf("error parsing token: %v", err)
 	}
 
