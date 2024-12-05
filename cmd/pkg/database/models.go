@@ -11,46 +11,46 @@ import (
 	"time"
 )
 
-type AttendeesAttendence string
+type AttendeesAttendance string
 
 const (
-	AttendeesAttendenceYes AttendeesAttendence = "Yes"
-	AttendeesAttendenceNo  AttendeesAttendence = "No"
+	AttendeesAttendanceYes AttendeesAttendance = "Yes"
+	AttendeesAttendanceNo  AttendeesAttendance = "No"
 )
 
-func (e *AttendeesAttendence) Scan(src interface{}) error {
+func (e *AttendeesAttendance) Scan(src interface{}) error {
 	switch s := src.(type) {
 	case []byte:
-		*e = AttendeesAttendence(s)
+		*e = AttendeesAttendance(s)
 	case string:
-		*e = AttendeesAttendence(s)
+		*e = AttendeesAttendance(s)
 	default:
-		return fmt.Errorf("unsupported scan type for AttendeesAttendence: %T", src)
+		return fmt.Errorf("unsupported scan type for AttendeesAttendance: %T", src)
 	}
 	return nil
 }
 
-type NullAttendeesAttendence struct {
-	AttendeesAttendence AttendeesAttendence
-	Valid               bool // Valid is true if AttendeesAttendence is not NULL
+type NullAttendeesAttendance struct {
+	AttendeesAttendance AttendeesAttendance
+	Valid               bool // Valid is true if AttendeesAttendance is not NULL
 }
 
 // Scan implements the Scanner interface.
-func (ns *NullAttendeesAttendence) Scan(value interface{}) error {
+func (ns *NullAttendeesAttendance) Scan(value interface{}) error {
 	if value == nil {
-		ns.AttendeesAttendence, ns.Valid = "", false
+		ns.AttendeesAttendance, ns.Valid = "", false
 		return nil
 	}
 	ns.Valid = true
-	return ns.AttendeesAttendence.Scan(value)
+	return ns.AttendeesAttendance.Scan(value)
 }
 
 // Value implements the driver Valuer interface.
-func (ns NullAttendeesAttendence) Value() (driver.Value, error) {
+func (ns NullAttendeesAttendance) Value() (driver.Value, error) {
 	if !ns.Valid {
 		return nil, nil
 	}
-	return string(ns.AttendeesAttendence), nil
+	return string(ns.AttendeesAttendance), nil
 }
 
 type RolesName string
@@ -149,7 +149,7 @@ type Attendee struct {
 	Title       sql.NullString
 	TableNo     sql.NullInt32
 	Role        sql.NullString
-	Attendence  NullAttendeesAttendence
+	Attendance  NullAttendeesAttendance
 	EventID     int32
 }
 

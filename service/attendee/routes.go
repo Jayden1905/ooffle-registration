@@ -27,6 +27,7 @@ func (h *Handler) RegisterRoutes(router fiber.Router) {
 	router.Post("/event/add_attendee", auth.WithJWTAuth(h.handleCreateNewAttendee, h.userStore))
 	router.Delete("/event/:event_id/attendees/:attendee_id", auth.WithJWTAuth(h.handleDeleteAttendeeByID, h.userStore))
 	router.Delete("/event/:event_id/attendees", auth.WithJWTAuth(h.handleDeleteAllAttendeesByEventID, h.userStore))
+	router.Put("/event/attendees/:attendee_id", auth.WithJWTAuth(h.handleUpdateAttendeeByID, h.userStore))
 }
 
 // Handler to create a new attendee
@@ -98,6 +99,97 @@ func (h *Handler) handleCreateNewAttendee(c *fiber.Ctx) error {
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(attendee)
+}
+
+// Handler to update an attendee by ID
+func (h *Handler) handleUpdateAttendeeByID(c *fiber.Ctx) error {
+	userID := auth.GetUserIDFromContext(c)
+
+	// Convert the attendee ID to integer from params
+	attendeeIDString := c.Params("attendee_id")
+	attendeeID, err := strconv.Atoi(attendeeIDString)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid attendee ID",
+		})
+	}
+
+	// Check if the attendee exists
+	attendee, err := h.store.GetAttendeeByID(int32(attendeeID))
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+				"error": "Attendee not found",
+			})
+		}
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to get attendee",
+		})
+	}
+
+	// Check if the user is the owner of the event
+	event, err := h.eventStore.GetEventByID(attendee.EventID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+				"error": "Event not found",
+			})
+		}
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to get event",
+		})
+	}
+
+	if event.UserID != userID {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Unauthorized",
+		})
+	}
+
+	var payload types.UpdateAttendeePayload
+	// Parse the request body
+	if err := c.BodyParser(&payload); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid payload",
+		})
+	}
+
+	// Validate the payload
+	if invalidFields, err := utils.ValidatePayload(payload); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error":  "Invalid payload",
+			"fields": invalidFields,
+		})
+	}
+
+	// Generate QR code
+	qrCode, err := utils.GenerateQRCodeBase64(payload.Email)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to generate QR code",
+		})
+	}
+
+	// Update the attendee by ID
+	if err := h.store.UpdateAttendeeByID(int32(attendeeID), &types.Attendee{
+		FristName:   payload.FirstName,
+		LastName:    payload.LastName,
+		Email:       payload.Email,
+		QrCode:      qrCode,
+		CompanyName: payload.CompanyName,
+		Title:       payload.Title,
+		TableNo:     payload.TableNo,
+		Role:        payload.Role,
+		Attendance:  payload.Attendance,
+	}); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to update attendee",
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message": "Attendee updated successfully",
+	})
 }
 
 // Handler for deleting an attendee by ID

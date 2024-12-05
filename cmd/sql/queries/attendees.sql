@@ -1,5 +1,5 @@
 -- name: CreateAttendee :exec
-INSERT INTO attendees (first_name, last_name, email, qr_code, company_name, title, table_no, role, attendence, event_id)
+INSERT INTO attendees (first_name, last_name, email, qr_code, company_name, title, table_no, role, attendance, event_id)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 -- name: GetAttendeeByEmail :one
@@ -17,5 +17,5 @@ DELETE FROM attendees WHERE id = ?;
 -- name: DeleteAllAttendeesByEventID :exec
 DELETE FROM attendees WHERE event_id = ?;
 
--- name: SaveAttendeeWithQRCode :exec
-UPDATE attendees SET qr_code = ? WHERE id = ?;
+-- name: UpdateAttendeeByID :exec
+UPDATE attendees SET first_name = ?, last_name = ?, email = ?, qr_code = ?, company_name = ?, title = ?, table_no = ?, role = ?, attendance = ? WHERE id = ?;

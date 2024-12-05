@@ -11,7 +11,7 @@ import (
 )
 
 const createAttendee = `-- name: CreateAttendee :exec
-INSERT INTO attendees (first_name, last_name, email, qr_code, company_name, title, table_no, role, attendence, event_id)
+INSERT INTO attendees (first_name, last_name, email, qr_code, company_name, title, table_no, role, attendance, event_id)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `
 
@@ -24,7 +24,7 @@ type CreateAttendeeParams struct {
 	Title       sql.NullString
 	TableNo     sql.NullInt32
 	Role        sql.NullString
-	Attendence  NullAttendeesAttendence
+	Attendance  NullAttendeesAttendance
 	EventID     int32
 }
 
@@ -38,7 +38,7 @@ func (q *Queries) CreateAttendee(ctx context.Context, arg CreateAttendeeParams) 
 		arg.Title,
 		arg.TableNo,
 		arg.Role,
-		arg.Attendence,
+		arg.Attendance,
 		arg.EventID,
 	)
 	return err
@@ -63,7 +63,7 @@ func (q *Queries) DeleteAttendeeByID(ctx context.Context, id int32) error {
 }
 
 const getAllAttendeesPaginatedByEventID = `-- name: GetAllAttendeesPaginatedByEventID :many
-SELECT id, first_name, last_name, email, qr_code, company_name, title, table_no, role, attendence, event_id FROM attendees WHERE event_id = ? LIMIT ? OFFSET ?
+SELECT id, first_name, last_name, email, qr_code, company_name, title, table_no, role, attendance, event_id FROM attendees WHERE event_id = ? LIMIT ? OFFSET ?
 `
 
 type GetAllAttendeesPaginatedByEventIDParams struct {
@@ -91,7 +91,7 @@ func (q *Queries) GetAllAttendeesPaginatedByEventID(ctx context.Context, arg Get
 			&i.Title,
 			&i.TableNo,
 			&i.Role,
-			&i.Attendence,
+			&i.Attendance,
 			&i.EventID,
 		); err != nil {
 			return nil, err
@@ -108,7 +108,7 @@ func (q *Queries) GetAllAttendeesPaginatedByEventID(ctx context.Context, arg Get
 }
 
 const getAttendeeByEmail = `-- name: GetAttendeeByEmail :one
-SELECT id, first_name, last_name, email, qr_code, company_name, title, table_no, role, attendence, event_id FROM attendees WHERE email = ?
+SELECT id, first_name, last_name, email, qr_code, company_name, title, table_no, role, attendance, event_id FROM attendees WHERE email = ?
 `
 
 func (q *Queries) GetAttendeeByEmail(ctx context.Context, email string) (Attendee, error) {
@@ -124,14 +124,14 @@ func (q *Queries) GetAttendeeByEmail(ctx context.Context, email string) (Attende
 		&i.Title,
 		&i.TableNo,
 		&i.Role,
-		&i.Attendence,
+		&i.Attendance,
 		&i.EventID,
 	)
 	return i, err
 }
 
 const getAttendeeByID = `-- name: GetAttendeeByID :one
-SELECT id, first_name, last_name, email, qr_code, company_name, title, table_no, role, attendence, event_id FROM attendees WHERE id = ?
+SELECT id, first_name, last_name, email, qr_code, company_name, title, table_no, role, attendance, event_id FROM attendees WHERE id = ?
 `
 
 func (q *Queries) GetAttendeeByID(ctx context.Context, id int32) (Attendee, error) {
@@ -147,22 +147,41 @@ func (q *Queries) GetAttendeeByID(ctx context.Context, id int32) (Attendee, erro
 		&i.Title,
 		&i.TableNo,
 		&i.Role,
-		&i.Attendence,
+		&i.Attendance,
 		&i.EventID,
 	)
 	return i, err
 }
 
-const saveAttendeeWithQRCode = `-- name: SaveAttendeeWithQRCode :exec
-UPDATE attendees SET qr_code = ? WHERE id = ?
+const updateAttendeeByID = `-- name: UpdateAttendeeByID :exec
+UPDATE attendees SET first_name = ?, last_name = ?, email = ?, qr_code = ?, company_name = ?, title = ?, table_no = ?, role = ?, attendance = ? WHERE id = ?
 `
 
-type SaveAttendeeWithQRCodeParams struct {
-	QrCode sql.NullString
-	ID     int32
+type UpdateAttendeeByIDParams struct {
+	FirstName   string
+	LastName    string
+	Email       string
+	QrCode      sql.NullString
+	CompanyName sql.NullString
+	Title       sql.NullString
+	TableNo     sql.NullInt32
+	Role        sql.NullString
+	Attendance  NullAttendeesAttendance
+	ID          int32
 }
 
-func (q *Queries) SaveAttendeeWithQRCode(ctx context.Context, arg SaveAttendeeWithQRCodeParams) error {
-	_, err := q.db.ExecContext(ctx, saveAttendeeWithQRCode, arg.QrCode, arg.ID)
+func (q *Queries) UpdateAttendeeByID(ctx context.Context, arg UpdateAttendeeByIDParams) error {
+	_, err := q.db.ExecContext(ctx, updateAttendeeByID,
+		arg.FirstName,
+		arg.LastName,
+		arg.Email,
+		arg.QrCode,
+		arg.CompanyName,
+		arg.Title,
+		arg.TableNo,
+		arg.Role,
+		arg.Attendance,
+		arg.ID,
+	)
 	return err
 }

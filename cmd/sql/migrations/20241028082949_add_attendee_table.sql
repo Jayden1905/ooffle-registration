@@ -10,7 +10,7 @@ CREATE TABLE `attendees` (
   `title` varchar(50) DEFAULT NULL,
   `table_no` int DEFAULT NULL,
   `role` varchar(50) DEFAULT NULL,
-  `attendence` enum('Yes', 'No') DEFAULT 'No',
+  `attendance` enum('Yes', 'No') DEFAULT 'No',
   PRIMARY KEY (`id`),
   UNIQUE KEY `Email_UNIQUE` (`email`),
   KEY `idx_lastName` (`last_name`),

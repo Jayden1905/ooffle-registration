@@ -13,7 +13,7 @@ type Attendee struct {
 	Title       string `json:"title"`
 	TableNo     int32  `json:"table_no"`
 	Role        string `json:"role"`
-	Attendence  bool   `json:"attendence"`
+	Attendance  bool   `json:"attendance"`
 }
 
 type AttendeeStore interface {
@@ -23,6 +23,7 @@ type AttendeeStore interface {
 	CreateAttendee(ctx context.Context, attendee *Attendee) error
 	DeleteAttendeeByID(attendeeID int32) error
 	DeleteAllAttendeesByEventID(eventID int32) error
+	UpdateAttendeeByID(attendeeID int32, data *Attendee) error
 }
 
 type CreateAttendeePayload struct {
@@ -34,4 +35,15 @@ type CreateAttendeePayload struct {
 	Title       string `json:"title"`
 	TableNo     int32  `json:"table_no"`
 	Role        string `json:"role"`
+}
+
+type UpdateAttendeePayload struct {
+	FirstName   string `json:"first_name"`
+	LastName    string `json:"last_name"`
+	Email       string `json:"email"`
+	CompanyName string `json:"company_name"`
+	Title       string `json:"title"`
+	TableNo     int32  `json:"table_no"`
+	Role        string `json:"role"`
+	Attendance  bool   `json:"attendance"`
 }
