@@ -2,20 +2,20 @@
 INSERT INTO attendees (first_name, last_name, email, qr_code, company_name, title, table_no, role, attendence, event_id)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
--- name: FindAttendeeByEmail :one
+-- name: GetAttendeeByEmail :one
 SELECT * FROM attendees WHERE email = ?;
 
--- name: GetAllAttendees :many
-SELECT * FROM attendees;
+-- name: GetAttendeeByID :one
+SELECT * FROM attendees WHERE id = ?;
 
--- name: GetAllAttendeesPaginated :many
-SELECT * FROM attendees LIMIT ? OFFSET ?;
+-- name: GetAllAttendeesPaginatedByEventID :many
+SELECT * FROM attendees WHERE event_id = ? LIMIT ? OFFSET ?;
 
 -- name: DeleteAttendeeByID :exec
 DELETE FROM attendees WHERE id = ?;
 
--- name: DeleteAllAttendees :exec
-DELETE FROM attendees;
+-- name: DeleteAllAttendeesByEventID :exec
+DELETE FROM attendees WHERE event_id = ?;
 
 -- name: SaveAttendeeWithQRCode :exec
 UPDATE attendees SET qr_code = ? WHERE id = ?;

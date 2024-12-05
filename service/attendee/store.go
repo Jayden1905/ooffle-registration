@@ -17,8 +17,8 @@ func NewStore(db *database.Queries) *Store {
 }
 
 // CreateAttendee creates a new attendee in the database
-func (s *Store) CreateAttendee(attendee *types.Attendee) error {
-	err := s.db.CreateAttendee(context.Background(), database.CreateAttendeeParams{
+func (s *Store) CreateAttendee(ctx context.Context, attendee *types.Attendee) error {
+	err := s.db.CreateAttendee(ctx, database.CreateAttendeeParams{
 		FirstName:   attendee.FristName,
 		LastName:    attendee.LastName,
 		Email:       attendee.Email,
@@ -37,13 +37,77 @@ func (s *Store) CreateAttendee(attendee *types.Attendee) error {
 	return nil
 }
 
+// GetAttendeeByEmail fetches an attendee from the database by email
+func (s *Store) GetAttendeeByEmail(email string) (*types.Attendee, error) {
+	attendee, err := s.db.GetAttendeeByEmail(context.Background(), email)
+	if err != nil {
+		return nil, err
+	}
+
+	return &types.Attendee{
+		ID:          attendee.ID,
+		FristName:   attendee.FirstName,
+		LastName:    attendee.LastName,
+		Email:       attendee.Email,
+		EventID:     attendee.EventID,
+		QrCode:      attendee.QrCode.String,
+		CompanyName: attendee.CompanyName.String,
+		Title:       attendee.Title.String,
+		TableNo:     attendee.TableNo.Int32,
+		Role:        attendee.Role.String,
+		Attendence:  attendee.Attendence.Valid,
+	}, nil
+}
+
+func (s *Store) GetAttendeeByID(id int32) (*types.Attendee, error) {
+	attendee, err := s.db.GetAttendeeByID(context.Background(), id)
+	if err != nil {
+		return nil, err
+	}
+
+	return &types.Attendee{
+		ID:          attendee.ID,
+		FristName:   attendee.FirstName,
+		LastName:    attendee.LastName,
+		Email:       attendee.Email,
+		EventID:     attendee.EventID,
+		QrCode:      attendee.QrCode.String,
+		CompanyName: attendee.CompanyName.String,
+		Title:       attendee.Title.String,
+		TableNo:     attendee.TableNo.Int32,
+		Role:        attendee.Role.String,
+		Attendence:  attendee.Attendence.Valid,
+	}, nil
+}
+
+// DeleteAttendeeByID deletes an attendee from the database by ID
+func (s *Store) DeleteAttendeeByID(attendeeID int32) error {
+	err := s.db.DeleteAttendeeByID(context.Background(), attendeeID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// DeleteAllAttendeesByEventID deletes all attendees from the database by event ID
+func (s *Store) DeleteAllAttendeesByEventID(eventID int32) error {
+	err := s.db.DeleteAllAttendeesByEventID(context.Background(), eventID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // GetAllAttendeesPaginated fetches all attendees from the database with pagination
-func (s *Store) GetAllAttendeesPaginated(page int32, pageSize int32) ([]*types.Attendee, error) {
+func (s *Store) GetAllAttendeesPaginated(page int32, pageSize int32, eventID int32) ([]*types.Attendee, error) {
 	offset := (page - 1) * pageSize
 
-	attendees, err := s.db.GetAllAttendeesPaginated(context.Background(), database.GetAllAttendeesPaginatedParams{
-		Limit:  pageSize,
-		Offset: offset,
+	attendees, err := s.db.GetAllAttendeesPaginatedByEventID(context.Background(), database.GetAllAttendeesPaginatedByEventIDParams{
+		Limit:   pageSize,
+		Offset:  offset,
+		EventID: eventID,
 	})
 	if err != nil {
 		return nil, err
@@ -53,6 +117,7 @@ func (s *Store) GetAllAttendeesPaginated(page int32, pageSize int32) ([]*types.A
 
 	for _, attendee := range attendees {
 		allAttendees = append(allAttendees, &types.Attendee{
+			ID:          attendee.ID,
 			FristName:   attendee.FirstName,
 			LastName:    attendee.LastName,
 			Email:       attendee.Email,

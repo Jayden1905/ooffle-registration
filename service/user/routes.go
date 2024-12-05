@@ -37,6 +37,7 @@ func (h *Handler) RegisterRoutes(router fiber.Router) {
 	router.Delete("/user/:id", auth.WithJWTAuth(h.handleDeleteUser, h.store))
 	router.Get("/user/auth/status", h.handleIsAuthenticated)
 	router.Get("/user/verify/email", h.handleVerifyAccount)
+	router.Post("/user/verify/email/resend", h.handleResendVerificationEmail)
 }
 
 // Handler for registering a new user
@@ -99,6 +100,51 @@ func (h *Handler) handleRegister(c *fiber.Ctx) error {
 		"email":   payload.Email,
 		"status":  "verification email sent",
 	})
+}
+
+// Handler for resending verification email
+func (h *Handler) handleResendVerificationEmail(c *fiber.Ctx) error {
+	var payload types.ResendVerificationEmailPayload
+
+	// Parse JSON payload
+	if err := c.BodyParser(&payload); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request payload"})
+	}
+
+	// Validate the payload
+	invalidFields, validationErr := utils.ValidatePayload(payload)
+	if validationErr != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error":          "Invalid payload",
+			"invalid_fields": invalidFields,
+		})
+	}
+
+	// Check if the user already exists and not verified
+	user, err := h.store.GetUserByEmail(payload.Email)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": fmt.Sprintf("User with email %s does not exist", payload.Email)})
+	}
+	if user.Verify == true {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": fmt.Sprintf("User with email %s is already verified", payload.Email)})
+	}
+
+	// Generate a verification token
+	token, err := auth.GenerateVerificationToken(payload.Email)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	// Send email asynchronously
+	go func() {
+		err = h.mailer.SendVerificationEmail(payload.Email, token)
+		if err != nil {
+			fmt.Printf("Error sending verification email: %v\n", err)
+		}
+	}()
+
+	// Return success response
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Verification email sent"})
 }
 
 // Handler for verifying a user
@@ -240,7 +286,7 @@ func (h *Handler) handleCreateSuperUser(c *fiber.Ctx) error {
 		// update user to super user
 		h.store.UpdateUserToSuperUser(c.Context(), u.ID)
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{
-			"role": role,
+			"message": "User updated to super user successfully",
 		})
 	}
 

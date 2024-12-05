@@ -2,14 +2,17 @@ package utils
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
+	"encoding/csv"
 	"fmt"
+	"log"
+	"os"
 	"strconv"
-	"strings"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/skip2/go-qrcode"
 
+	"github.com/jayden1905/event-registration-software/db"
 	"github.com/jayden1905/event-registration-software/types"
 )
 
@@ -45,7 +48,7 @@ func IsSuperUser(userID int32, store types.UserStore) (bool, error) {
 }
 
 // Function to generate QR code as a base64 string
-func GenerateQRCodeBase64(data string) (string, error) {
+func generateQRCodeBase64(data string) (string, error) {
 	qrCode, err := qrcode.New(data, qrcode.Medium)
 	if err != nil {
 		return "", err
@@ -61,15 +64,12 @@ func GenerateQRCodeBase64(data string) (string, error) {
 	return base64.StdEncoding.EncodeToString(buffer.Bytes()), nil
 }
 
-// Example of parsing an integer for table number
+// Example of parsing an integer for table number (simple parsing)
 func parseTableNo(value string) int32 {
-	// remove the whitespaces
-	value = strings.TrimSpace(value)
 	if value == "" {
 		return 0
 	}
 
-	// convert the string to an integer
 	num, err := strconv.Atoi(value)
 	if err != nil {
 		return 0

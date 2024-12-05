@@ -49,3 +49,7 @@ type UpdateUserInformationPayload struct {
 	LastName  string `json:"last_name" validate:"required"`
 	Email     string `json:"email" validate:"required,email"`
 }
+
+type ResendVerificationEmailPayload struct {
+	Email string `json:"email" validate:"required,email"`
+}
