@@ -18,6 +18,11 @@ func NewStore(db *database.Queries) *Store {
 
 // CreateAttendee creates a new attendee in the database
 func (s *Store) CreateAttendee(ctx context.Context, attendee *types.Attendee) error {
+	attendanceValue := database.AttendeesAttendanceNo
+	if attendee.Attendance {
+		attendanceValue = database.AttendeesAttendanceYes
+	}
+
 	err := s.db.CreateAttendee(ctx, database.CreateAttendeeParams{
 		FirstName:   attendee.FristName,
 		LastName:    attendee.LastName,
@@ -28,7 +33,10 @@ func (s *Store) CreateAttendee(ctx context.Context, attendee *types.Attendee) er
 		Title:       sql.NullString{String: attendee.Title, Valid: true},
 		TableNo:     sql.NullInt32{Int32: attendee.TableNo, Valid: true},
 		Role:        sql.NullString{String: attendee.Role, Valid: true},
-		Attendance:  database.NullAttendeesAttendance{Valid: attendee.Attendance},
+		Attendance: database.NullAttendeesAttendance{
+			AttendeesAttendance: attendanceValue,
+			Valid:               true,
+		},
 	})
 	if err != nil {
 		return err
@@ -102,6 +110,11 @@ func (s *Store) DeleteAllAttendeesByEventID(eventID int32) error {
 
 // UpdateAttendeeByID updates an attendee in the database by ID
 func (s *Store) UpdateAttendeeByID(attendeeID int32, data *types.Attendee) error {
+	attendanceValue := database.AttendeesAttendanceNo
+	if data.Attendance {
+		attendanceValue = database.AttendeesAttendanceYes
+	}
+
 	err := s.db.UpdateAttendeeByID(context.Background(), database.UpdateAttendeeByIDParams{
 		ID:          attendeeID,
 		FirstName:   data.FristName,
@@ -112,7 +125,10 @@ func (s *Store) UpdateAttendeeByID(attendeeID int32, data *types.Attendee) error
 		Title:       sql.NullString{String: data.Title, Valid: true},
 		TableNo:     sql.NullInt32{Int32: data.TableNo, Valid: true},
 		Role:        sql.NullString{String: data.Role, Valid: true},
-		Attendance:  database.NullAttendeesAttendance{Valid: data.Attendance},
+		Attendance: database.NullAttendeesAttendance{
+			AttendeesAttendance: attendanceValue,
+			Valid:               true,
+		},
 	})
 	if err != nil {
 		return err

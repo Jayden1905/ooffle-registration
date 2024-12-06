@@ -61,8 +61,8 @@ func GenerateQRCodeBase64(data string) (string, error) {
 	return base64.StdEncoding.EncodeToString(buffer.Bytes()), nil
 }
 
-// Example of parsing an integer for table number
-func parseTableNo(value string) int32 {
+// Parsing an integer for table number
+func ParseTableNo(value string) int32 {
 	// remove the whitespaces
 	value = strings.TrimSpace(value)
 	if value == "" {

@@ -2,7 +2,9 @@ package attendee
 
 import (
 	"database/sql"
+	"encoding/csv"
 	"errors"
+	"log"
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
@@ -27,7 +29,8 @@ func (h *Handler) RegisterRoutes(router fiber.Router) {
 	router.Post("/event/add_attendee", auth.WithJWTAuth(h.handleCreateNewAttendee, h.userStore))
 	router.Delete("/event/:event_id/attendees/:attendee_id", auth.WithJWTAuth(h.handleDeleteAttendeeByID, h.userStore))
 	router.Delete("/event/:event_id/attendees", auth.WithJWTAuth(h.handleDeleteAllAttendeesByEventID, h.userStore))
-	router.Put("/event/attendees/:attendee_id", auth.WithJWTAuth(h.handleUpdateAttendeeByID, h.userStore))
+	router.Patch("/event/attendees/:attendee_id", auth.WithJWTAuth(h.handleUpdateAttendeeByID, h.userStore))
+	router.Post("/event/:event_id/attendees/import", auth.WithJWTAuth(h.handleImportAttendeesFromCSV, h.userStore))
 }
 
 // Handler to create a new attendee
@@ -90,6 +93,7 @@ func (h *Handler) handleCreateNewAttendee(c *fiber.Ctx) error {
 		Title:       payload.Title,
 		TableNo:     payload.TableNo,
 		Role:        payload.Role,
+		Attendance:  false,
 	}
 
 	if err := h.store.CreateAttendee(c.Context(), attendee); err != nil {
@@ -99,6 +103,94 @@ func (h *Handler) handleCreateNewAttendee(c *fiber.Ctx) error {
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(attendee)
+}
+
+// Handler to import attendees from a CSV file
+func (h *Handler) handleImportAttendeesFromCSV(c *fiber.Ctx) error {
+	userID := auth.GetUserIDFromContext(c)
+
+	// Check if the user is the owner of the event
+	eventIDString := c.Params("event_id")
+	eventID, err := strconv.Atoi(eventIDString)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid event ID",
+		})
+	}
+
+	event, err := h.eventStore.GetEventByID(int32(eventID))
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to get event",
+		})
+	}
+	if event.UserID != userID {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Unauthorized",
+		})
+	}
+
+	// Parse the file from the request
+	file, err := c.FormFile("import")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid file",
+		})
+	}
+	// Check if the file is a CSV file
+	if file.Header.Get("Content-Type") != "text/csv" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid file type",
+		})
+	}
+
+	// Open the file
+	fileContent, err := file.Open()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to open file",
+		})
+	}
+
+	// Parse the CSV file
+	csvReader := csv.NewReader(fileContent)
+	records, err := csvReader.ReadAll()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to parse CSV file",
+		})
+	}
+
+	// Skip the header row and insert each row as an attendee
+	for _, record := range records[1:] {
+		qrCodeBase64, err := utils.GenerateQRCodeBase64(record[2])
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Failed to generate QR code",
+			})
+		}
+
+		error := h.store.CreateAttendee(c.Context(), &types.Attendee{
+			FristName:   record[0],
+			LastName:    record[1],
+			Email:       record[2],
+			EventID:     int32(eventID),
+			QrCode:      qrCodeBase64,
+			CompanyName: record[3],
+			Title:       record[4],
+			TableNo:     utils.ParseTableNo(record[5]),
+			Role:        record[6],
+		})
+		if error != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Failed to create attendee",
+			})
+		}
+	}
+
+	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
+		"message": "Attendees imported successfully",
+	})
 }
 
 // Handler to update an attendee by ID
@@ -162,11 +254,34 @@ func (h *Handler) handleUpdateAttendeeByID(c *fiber.Ctx) error {
 		})
 	}
 
-	// Generate QR code
-	qrCode, err := utils.GenerateQRCodeBase64(payload.Email)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to generate QR code",
+	if payload.Email != "" && payload.Email != attendee.Email {
+		log.Println(payload.Email)
+		// Generate QR code
+		qrCode, err := utils.GenerateQRCodeBase64(payload.Email)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Failed to generate QR code",
+			})
+		}
+		// Update the attendee by ID
+		if err := h.store.UpdateAttendeeByID(int32(attendeeID), &types.Attendee{
+			FristName:   payload.FirstName,
+			LastName:    payload.LastName,
+			Email:       payload.Email,
+			QrCode:      qrCode,
+			CompanyName: payload.CompanyName,
+			Title:       payload.Title,
+			TableNo:     payload.TableNo,
+			Role:        payload.Role,
+			Attendance:  payload.Attendance,
+		}); err != nil {
+			log.Println(err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Failed to update attendee",
+			})
+		}
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{
+			"message": "Attendee updated successfully with new qrcode",
 		})
 	}
 
@@ -175,13 +290,13 @@ func (h *Handler) handleUpdateAttendeeByID(c *fiber.Ctx) error {
 		FristName:   payload.FirstName,
 		LastName:    payload.LastName,
 		Email:       payload.Email,
-		QrCode:      qrCode,
 		CompanyName: payload.CompanyName,
 		Title:       payload.Title,
 		TableNo:     payload.TableNo,
 		Role:        payload.Role,
 		Attendance:  payload.Attendance,
 	}); err != nil {
+		log.Println(err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to update attendee",
 		})
