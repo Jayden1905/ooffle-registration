@@ -31,7 +31,6 @@ func (h *Handler) RegisterRoutes(router fiber.Router) {
 	router.Post("/user/register", h.handleRegister)
 	router.Patch("/user/super-user", h.handleCreateSuperUser)
 	router.Put("/user/update-user/:id", auth.WithJWTAuth(h.handleUpdateUserInformation, h.store))
-	router.Get("/user/current-user", auth.WithJWTAuth(h.handleGetCurrentUser, h.store))
 	router.Get("/users", auth.WithJWTAuth(h.handleGetUsersPaginated, h.store))
 	router.Get("/user/:id", auth.WithJWTAuth(h.handleGetUserByID, h.store))
 	router.Delete("/user/:id", auth.WithJWTAuth(h.handleDeleteUser, h.store))
@@ -204,6 +203,10 @@ func (h *Handler) handleLogin(c *fiber.Ctx) error {
 
 	if !auth.ComparePasswords(u.Password, []byte(payload.Password)) {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Email or password is incorrect"})
+	}
+
+	if !u.Verify {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Please verify your email"})
 	}
 
 	secret := []byte(config.Envs.JWTSecret)
@@ -400,18 +403,6 @@ func (h *Handler) handleUpdateUserInformation(c *fiber.Ctx) error {
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "User information updated successfully"})
-}
-
-// Handler for getting the current user
-func (h *Handler) handleGetCurrentUser(c *fiber.Ctx) error {
-	userID := auth.GetUserIDFromContext(c)
-
-	u, err := h.store.GetUserByID(userID)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": fmt.Sprintf("Error getting user by id: %v", err)})
-	}
-
-	return c.Status(fiber.StatusOK).JSON(u)
 }
 
 // Handler for getting all users by page

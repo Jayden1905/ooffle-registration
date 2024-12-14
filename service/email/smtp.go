@@ -1,9 +1,12 @@
 package email
 
 import (
+	"bytes"
 	"fmt"
+	"html/template"
 	"log"
 	"net/smtp"
+	"os"
 
 	"github.com/jayden1905/event-registration-software/config"
 )
@@ -33,16 +36,44 @@ func (es *EmailService) SendVerificationEmail(toEmail string, token string) erro
 	auth := smtp.PlainAuth("", es.SMTPUsername, es.SMTPPassword, es.SMTPHost)
 
 	// Verification link
-	verificationLink := fmt.Sprintf("%s/api/v1/user/verify/email?token=%s", "http://127.0.0.1:8080", token)
+	verificationLink := fmt.Sprintf("%s/api/v1/user/verify/email?token=%s", config.Envs.BackendHost, token)
 
-	// Create the HTML email body
+	// Load the HTML template
+	tmplPath := "templates/verify_email.html"
+	tmplContent, err := os.ReadFile(tmplPath)
+	if err != nil {
+		log.Printf("Error reading email template: %v", err)
+		return err
+	}
+
+	// Parse the template
+	tmpl, err := template.New("verify_email").Parse(string(tmplContent))
+	if err != nil {
+		log.Printf("Error parsing email template: %v", err)
+		return err
+	}
+
+	// Prepare template data
+	data := struct {
+		VerificationLink string
+	}{
+		VerificationLink: verificationLink,
+	}
+
+	// Render the template
+	var renderedBody bytes.Buffer
+	if err := tmpl.Execute(&renderedBody, data); err != nil {
+		log.Printf("Error executing email template: %v", err)
+		return err
+	}
+
+	// Create the email content
 	subject := "Subject: Verify Your Account\r\n"
 	contentType := "MIME-Version: 1.0\r\nContent-Type: text/html; charset=\"UTF-8\";\r\n"
-	body := fmt.Sprintf(`<html><body><p>Verify your account:</p><a href="%s">Verify Your Account</a></body></html>`, verificationLink)
-	msg := []byte(subject + contentType + "\r\n" + body)
+	msg := []byte(subject + contentType + "\r\n" + renderedBody.String())
 
 	// Send the email
-	err := smtp.SendMail(es.SMTPHost+":"+es.SMTPPort, auth, es.FromEmail, []string{toEmail}, msg)
+	err = smtp.SendMail(es.SMTPHost+":"+es.SMTPPort, auth, es.FromEmail, []string{toEmail}, msg)
 	if err != nil {
 		log.Printf("Error sending email to %s: %v", toEmail, err)
 		return err

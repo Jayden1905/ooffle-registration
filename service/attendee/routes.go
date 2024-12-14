@@ -162,12 +162,21 @@ func (h *Handler) handleImportAttendeesFromCSV(c *fiber.Ctx) error {
 	}
 
 	// Skip the header row and insert each row as an attendee
+	errorAttendees := []types.Attendee{}
 	for _, record := range records[1:] {
+		// Generate QR code in base64 format
 		qrCodeBase64, err := utils.GenerateQRCodeBase64(record[2])
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 				"error": "Failed to generate QR code",
 			})
+		}
+
+		// Check if the attendee with same email already exists
+		attendeeExist, err := h.store.GetAttendeeByEmail(record[2])
+		if attendeeExist != nil {
+			errorAttendees = append(errorAttendees, *attendeeExist)
+			continue
 		}
 
 		error := h.store.CreateAttendee(c.Context(), &types.Attendee{
@@ -186,6 +195,14 @@ func (h *Handler) handleImportAttendeesFromCSV(c *fiber.Ctx) error {
 				"error": "Failed to create attendee",
 			})
 		}
+	}
+
+	if len(errorAttendees) > 0 {
+		return c.Status(fiber.StatusPartialContent).JSON(fiber.Map{
+			"message":   "Attendees imported with some errors",
+			"error":     "Some attendees already exist",
+			"attendees": errorAttendees,
+		})
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
