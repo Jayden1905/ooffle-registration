@@ -26,6 +26,8 @@ func NewHandler(store types.UserStore, mailer email.Mailer) *Handler {
 
 // RegisterRoutes for Fiber
 func (h *Handler) RegisterRoutes(router fiber.Router) {
+	rateLimiterEmailVerification := auth.CreateRateLimiter(1, 5*time.Minute, "We have sent you a verification email. Please check your inbox and spam folder.")
+
 	router.Post("/user/auth/login", auth.BlockIfAuthenticated(h.handleLogin))
 	router.Post("/user/auth/logout", h.handleLogout)
 	router.Post("/user/register", h.handleRegister)
@@ -36,7 +38,7 @@ func (h *Handler) RegisterRoutes(router fiber.Router) {
 	router.Delete("/user/:id", auth.WithJWTAuth(h.handleDeleteUser, h.store))
 	router.Get("/user/auth/status", h.handleIsAuthenticated)
 	router.Get("/user/verify/email", h.handleVerifyAccount)
-	router.Post("/user/verify/email/resend", h.handleResendVerificationEmail)
+	router.Post("/user/verify/email/resend", rateLimiterEmailVerification, h.handleResendVerificationEmail)
 }
 
 // Handler for registering a new user
@@ -143,7 +145,9 @@ func (h *Handler) handleResendVerificationEmail(c *fiber.Ctx) error {
 	}()
 
 	// Return success response
-	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Verification email sent"})
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message": "Verification email sent",
+	})
 }
 
 // Handler for verifying a user

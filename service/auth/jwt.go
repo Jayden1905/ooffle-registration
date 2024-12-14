@@ -1,12 +1,15 @@
 package auth
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"log"
 	"strconv"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/golang-jwt/jwt/v4"
 
 	"github.com/jayden1905/event-registration-software/config"
@@ -38,7 +41,7 @@ func CreateJWT(secret []byte, userID int) (string, error) {
 func GenerateVerificationToken(email string) (string, error) {
 	claims := jwt.MapClaims{
 		"email": email,
-		"exp":   time.Now().Add(24 * time.Hour).Unix(), // Token expires in 24 hours
+		"exp":   time.Now().Add(5 * time.Minute).Unix(), // Token expires in 5 minutes
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -198,4 +201,34 @@ func GetUserIDFromContext(c *fiber.Ctx) int32 {
 		return 0
 	}
 	return userID
+}
+
+// hashUserID hashes the userID using SHA-256
+func hashUserID(userID int32) string {
+	hash := sha256.New()
+	hash.Write([]byte(fmt.Sprintf("%d", userID)))
+	return hex.EncodeToString(hash.Sum(nil))
+}
+
+// CreateRateLimiter returns a Fiber middleware for rate limiting
+func CreateRateLimiter(maxRequests int, expiration time.Duration, customErrMessage string) fiber.Handler {
+	return limiter.New(limiter.Config{
+		Max:        maxRequests,
+		Expiration: expiration,
+		KeyGenerator: func(c *fiber.Ctx) string {
+			// Use userID from Locals (set by authentication middleware)
+			userID := GetUserIDFromContext(c)
+			if userID == 0 {
+				// If user is not authenticated (no userID), rate limit by IP
+				return c.IP()
+			}
+			return fmt.Sprintf("user:%v", hashUserID(userID))
+		},
+		LimitReached: func(c *fiber.Ctx) error {
+			// Custom error response when limit is reached
+			return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
+				"error": customErrMessage,
+			})
+		},
+	})
 }
