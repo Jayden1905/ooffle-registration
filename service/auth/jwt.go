@@ -210,6 +210,14 @@ func hashUserID(userID int32) string {
 	return hex.EncodeToString(hash.Sum(nil))
 }
 
+func getRealClientIP(c *fiber.Ctx) string {
+	ip := c.Get("X-Forwarded-For")
+	if ip != "" {
+		return ip
+	}
+	return c.IP()
+}
+
 // CreateRateLimiter returns a Fiber middleware for rate limiting
 func CreateRateLimiter(maxRequests int, expiration time.Duration, customErrMessage string) fiber.Handler {
 	return limiter.New(limiter.Config{
@@ -220,7 +228,7 @@ func CreateRateLimiter(maxRequests int, expiration time.Duration, customErrMessa
 			userID := GetUserIDFromContext(c)
 			if userID == 0 {
 				// If user is not authenticated (no userID), rate limit by IP
-				return c.IP()
+				return getRealClientIP(c)
 			}
 			return fmt.Sprintf("user:%v", hashUserID(userID))
 		},
