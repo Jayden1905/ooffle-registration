@@ -22,6 +22,7 @@ func NewHandler(store types.EventStore, userStore types.UserStore) *Handler {
 
 func (h *Handler) RegisterRoutes(router fiber.Router) {
 	router.Get("/events", auth.WithJWTAuth(h.handleGetAllEvents, h.userStore))
+	router.Get("/event/:id", auth.WithJWTAuth(h.handleGetEventByID, h.userStore))
 	router.Post("/event/create", auth.WithJWTAuth(h.handleCreateEvent, h.userStore))
 	router.Put("/event/update/:id", auth.WithJWTAuth(h.handleUpdateEvent, h.userStore))
 	router.Delete("/event/delete/:id", auth.WithJWTAuth(h.handleDeleteEventByEventID, h.userStore))
@@ -39,6 +40,32 @@ func (h *Handler) handleGetAllEvents(c *fiber.Ctx) error {
 	}
 
 	return c.Status(fiber.StatusOK).JSON(events)
+}
+
+// handleGetEventByID fetches an event by its ID from the database
+func (h *Handler) handleGetEventByID(c *fiber.Ctx) error {
+	// get user id from the context
+	userID := auth.GetUserIDFromContext(c)
+
+	// get event id from the context
+	eventIDString := c.Params("id")
+	eventIDInt, err := strconv.Atoi(eventIDString)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid event id"})
+	}
+	eventID := int32(eventIDInt)
+
+	event, err := h.store.GetEventByID(eventID)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	// check if the user is the owner of the event
+	if userID != event.UserID {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "You are not authorized to view this event"})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(event)
 }
 
 // handleCreateEvent creates a new event in the database
