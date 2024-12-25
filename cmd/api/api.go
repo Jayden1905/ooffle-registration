@@ -48,14 +48,19 @@ func (s *apiConfig) Run() error {
 	eventStore := event.NewStore(s.db)
 	eventHandler := event.NewHandler(eventStore, userStore)
 
+	// Define the email store and handler
+	emailTemplateStore := email.NewStore(s.db)
+	emailHandler := email.NewHandler(emailTemplateStore, eventStore, userStore)
+
 	// Define the attendee store and handler
 	attendeeStore := attendee.NewStore(s.db)
-	attendeeHandler := attendee.NewHandler(attendeeStore, eventStore, userStore)
+	attendeeHandler := attendee.NewHandler(attendeeStore, eventStore, userStore, emailTemplateStore, mailer)
 
 	// Register the routes in v1 group
 	userHandler.RegisterRoutes(apiV1)
 	eventHandler.RegisterRoutes(apiV1)
 	attendeeHandler.RegisterRoutes(apiV1)
+	emailHandler.RegisterRoutes(apiV1)
 
 	app.Use("/health", func(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{"status": "ok"})

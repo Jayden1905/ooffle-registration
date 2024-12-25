@@ -4,7 +4,7 @@ import "context"
 
 type Attendee struct {
 	ID          int32  `json:"id"`
-	FristName   string `json:"first_name"`
+	FirstName   string `json:"first_name"`
 	LastName    string `json:"last_name"`
 	Email       string `json:"email"`
 	EventID     int32  `json:"event_id"`
@@ -18,6 +18,8 @@ type Attendee struct {
 
 type AttendeeStore interface {
 	GetAllAttendeesPaginated(page int32, pageSize int32, eventID int32) ([]*Attendee, error)
+	GetAllAttendees(eventID int32) ([]*Attendee, error)
+	GetAttendeeRowCount(eventID int32) (int64, error)
 	GetAttendeeByEmail(email string) (*Attendee, error)
 	GetAttendeeByID(attendeeID int32) (*Attendee, error)
 	CreateAttendee(ctx context.Context, attendee *Attendee) error

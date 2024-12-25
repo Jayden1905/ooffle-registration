@@ -25,6 +25,9 @@ type Config struct {
 	SMTPUsername           string
 	SMTPPassword           string
 	EMAILFrom              string
+	CloudinaryCloudName    string
+	CloudinaryAPIKey       string
+	CloudinarySecretKey    string
 }
 
 var Envs = initConfig()
@@ -51,6 +54,9 @@ func initConfig() Config {
 		SMTPUsername:           getEnv("SMTP_USERNAME", ""),
 		SMTPPassword:           getEnv("SMTP_PASSWORD", ""),
 		EMAILFrom:              getEnv("EMAIL_FROM", ""),
+		CloudinaryCloudName:    getEnv("CLOUDINARY_CLOUD_NAME", ""),
+		CloudinaryAPIKey:       getEnv("CLOUDINARY_API_KEY", ""),
+		CloudinarySecretKey:    getEnv("CLOUDINARY_SECRET_KEY", ""),
 	}
 }
 

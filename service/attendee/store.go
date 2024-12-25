@@ -24,7 +24,7 @@ func (s *Store) CreateAttendee(ctx context.Context, attendee *types.Attendee) er
 	}
 
 	err := s.db.CreateAttendee(ctx, database.CreateAttendeeParams{
-		FirstName:   attendee.FristName,
+		FirstName:   attendee.FirstName,
 		LastName:    attendee.LastName,
 		Email:       attendee.Email,
 		EventID:     attendee.EventID,
@@ -54,7 +54,7 @@ func (s *Store) GetAttendeeByEmail(email string) (*types.Attendee, error) {
 
 	return &types.Attendee{
 		ID:          attendee.ID,
-		FristName:   attendee.FirstName,
+		FirstName:   attendee.FirstName,
 		LastName:    attendee.LastName,
 		Email:       attendee.Email,
 		EventID:     attendee.EventID,
@@ -75,7 +75,7 @@ func (s *Store) GetAttendeeByID(id int32) (*types.Attendee, error) {
 
 	return &types.Attendee{
 		ID:          attendee.ID,
-		FristName:   attendee.FirstName,
+		FirstName:   attendee.FirstName,
 		LastName:    attendee.LastName,
 		Email:       attendee.Email,
 		EventID:     attendee.EventID,
@@ -117,7 +117,7 @@ func (s *Store) UpdateAttendeeByID(attendeeID int32, data *types.Attendee) error
 
 	err := s.db.UpdateAttendeeByID(context.Background(), database.UpdateAttendeeByIDParams{
 		ID:          attendeeID,
-		FirstName:   data.FristName,
+		FirstName:   data.FirstName,
 		LastName:    data.LastName,
 		Email:       data.Email,
 		QrCode:      sql.NullString{String: data.QrCode, Valid: true},
@@ -155,7 +155,7 @@ func (s *Store) GetAllAttendeesPaginated(page int32, pageSize int32, eventID int
 	for _, attendee := range attendees {
 		allAttendees = append(allAttendees, &types.Attendee{
 			ID:          attendee.ID,
-			FristName:   attendee.FirstName,
+			FirstName:   attendee.FirstName,
 			LastName:    attendee.LastName,
 			Email:       attendee.Email,
 			EventID:     attendee.EventID,
@@ -169,4 +169,42 @@ func (s *Store) GetAllAttendeesPaginated(page int32, pageSize int32, eventID int
 	}
 
 	return allAttendees, nil
+}
+
+// GetAllAttendees fetches all attendees from the database
+func (s *Store) GetAllAttendees(eventID int32) ([]*types.Attendee, error) {
+	attendees, err := s.db.GetAllAttendeesByEventID(context.Background(), eventID)
+	if err != nil {
+		return nil, err
+	}
+
+	var allAttendees []*types.Attendee
+
+	for _, attendee := range attendees {
+		allAttendees = append(allAttendees, &types.Attendee{
+			ID:          attendee.ID,
+			FirstName:   attendee.FirstName,
+			LastName:    attendee.LastName,
+			Email:       attendee.Email,
+			EventID:     attendee.EventID,
+			QrCode:      attendee.QrCode.String,
+			CompanyName: attendee.CompanyName.String,
+			Title:       attendee.Title.String,
+			TableNo:     attendee.TableNo.Int32,
+			Role:        attendee.Role.String,
+			Attendance:  attendee.Attendance.Valid,
+		})
+	}
+
+	return allAttendees, nil
+}
+
+// GetAttendeeRowCount fetches the total number of attendees from the database
+func (s *Store) GetAttendeeRowCount(eventID int32) (int64, error) {
+	count, err := s.db.GetAttendeesRowCountByEventID(context.Background(), eventID)
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
 }

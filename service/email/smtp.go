@@ -7,8 +7,10 @@ import (
 	"log"
 	"net/smtp"
 	"os"
+	"strings"
 
 	"github.com/jayden1905/event-registration-software/config"
+	"github.com/jayden1905/event-registration-software/types"
 )
 
 // EmailService holds the SMTP server information for sending emails
@@ -76,6 +78,82 @@ func (es *EmailService) SendVerificationEmail(toEmail string, token string) erro
 	err = smtp.SendMail(es.SMTPHost+":"+es.SMTPPort, auth, es.FromEmail, []string{toEmail}, msg)
 	if err != nil {
 		log.Printf("Error sending email to %s: %v", toEmail, err)
+		return err
+	}
+
+	return nil
+}
+
+// SendInvitationEmail sends the invitation email
+func (es *EmailService) SendInvitationEmail(attendee *types.Attendee, template *types.EmailTemplate) error {
+	// Replace template variables with attendee data
+	content := template.Content
+	content = strings.Replace(content, "{{first_name}}", attendee.FirstName, -1)
+	content = strings.Replace(content, "{{last_name}}", attendee.LastName, -1)
+	content = strings.Replace(content, "{{qr_code}}", attendee.QrCode, -1) // Use cid for the inline image
+
+	// Prepare the email body
+	body := fmt.Sprintf(`
+		<!DOCTYPE html>
+		<html lang="en">
+			<head>
+				<meta charset="UTF-8">
+				<meta name="viewport" content="width=device-width, initial-scale=1.0">
+				<title>Email Preview</title>
+				<style>
+					body {
+						font-family: Arial, sans-serif;
+						line-height: 1.6;
+						margin: 0;
+						padding: 0;
+						color: black;
+					}
+					.container {
+						max-width: 600px;
+						width: 100%%;
+						margin: 0 auto;
+					}
+					.img-container img {
+						width: 100%%;
+						height: 200px;
+						object-fit: cover;
+						object-position: center;
+					}
+				</style>
+			</head>
+		<body>
+		<table class="container" role="presentation" cellspacing="0" cellpadding="0">
+			<tr>
+				<td class="img-container">
+					<img src="%s" alt="Header" />
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<div>%s</div>
+				</td>
+			</tr>
+			<tr>
+				<td class="img-container">
+					<img src="%s" alt="Footer" />
+				</td>
+			</tr>
+		</table>
+		</body>
+		</html>
+	`, template.HeaderImage, content, template.FooterImage)
+
+	subject := "Subject: Verify Your Account\r\n"
+	contentType := "MIME-Version: 1.0\r\nContent-Type: text/html; charset=\"UTF-8\";\r\n"
+
+	msg := []byte(subject + contentType + "\r\n" + body)
+
+	auth := smtp.PlainAuth("", es.SMTPUsername, es.SMTPPassword, es.SMTPHost)
+
+	// Send the email
+	err := smtp.SendMail(es.SMTPHost+":"+es.SMTPPort, auth, es.FromEmail, []string{attendee.Email}, msg)
+	if err != nil {
+		log.Printf("Error sending email to %s: %v", attendee.Email, err)
 		return err
 	}
 

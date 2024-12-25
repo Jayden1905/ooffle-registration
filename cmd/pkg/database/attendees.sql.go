@@ -11,7 +11,18 @@ import (
 )
 
 const createAttendee = `-- name: CreateAttendee :exec
-INSERT INTO attendees (first_name, last_name, email, qr_code, company_name, title, table_no, role, attendance, event_id)
+INSERT INTO attendees (
+        first_name,
+        last_name,
+        email,
+        qr_code,
+        company_name,
+        title,
+        table_no,
+        role,
+        attendance,
+        event_id
+    )
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `
 
@@ -45,7 +56,8 @@ func (q *Queries) CreateAttendee(ctx context.Context, arg CreateAttendeeParams) 
 }
 
 const deleteAllAttendeesByEventID = `-- name: DeleteAllAttendeesByEventID :exec
-DELETE FROM attendees WHERE event_id = ?
+DELETE FROM attendees
+WHERE event_id = ?
 `
 
 func (q *Queries) DeleteAllAttendeesByEventID(ctx context.Context, eventID int32) error {
@@ -54,7 +66,8 @@ func (q *Queries) DeleteAllAttendeesByEventID(ctx context.Context, eventID int32
 }
 
 const deleteAttendeeByID = `-- name: DeleteAttendeeByID :exec
-DELETE FROM attendees WHERE id = ?
+DELETE FROM attendees
+WHERE id = ?
 `
 
 func (q *Queries) DeleteAttendeeByID(ctx context.Context, id int32) error {
@@ -62,8 +75,52 @@ func (q *Queries) DeleteAttendeeByID(ctx context.Context, id int32) error {
 	return err
 }
 
+const getAllAttendeesByEventID = `-- name: GetAllAttendeesByEventID :many
+SELECT id, first_name, last_name, email, qr_code, company_name, title, table_no, role, attendance, event_id
+FROM attendees
+WHERE event_id = ?
+`
+
+func (q *Queries) GetAllAttendeesByEventID(ctx context.Context, eventID int32) ([]Attendee, error) {
+	rows, err := q.db.QueryContext(ctx, getAllAttendeesByEventID, eventID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Attendee
+	for rows.Next() {
+		var i Attendee
+		if err := rows.Scan(
+			&i.ID,
+			&i.FirstName,
+			&i.LastName,
+			&i.Email,
+			&i.QrCode,
+			&i.CompanyName,
+			&i.Title,
+			&i.TableNo,
+			&i.Role,
+			&i.Attendance,
+			&i.EventID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getAllAttendeesPaginatedByEventID = `-- name: GetAllAttendeesPaginatedByEventID :many
-SELECT id, first_name, last_name, email, qr_code, company_name, title, table_no, role, attendance, event_id FROM attendees WHERE event_id = ? LIMIT ? OFFSET ?
+SELECT id, first_name, last_name, email, qr_code, company_name, title, table_no, role, attendance, event_id
+FROM attendees
+WHERE event_id = ?
+LIMIT ? OFFSET ?
 `
 
 type GetAllAttendeesPaginatedByEventIDParams struct {
@@ -108,7 +165,9 @@ func (q *Queries) GetAllAttendeesPaginatedByEventID(ctx context.Context, arg Get
 }
 
 const getAttendeeByEmail = `-- name: GetAttendeeByEmail :one
-SELECT id, first_name, last_name, email, qr_code, company_name, title, table_no, role, attendance, event_id FROM attendees WHERE email = ?
+SELECT id, first_name, last_name, email, qr_code, company_name, title, table_no, role, attendance, event_id
+FROM attendees
+WHERE email = ?
 `
 
 func (q *Queries) GetAttendeeByEmail(ctx context.Context, email string) (Attendee, error) {
@@ -131,7 +190,9 @@ func (q *Queries) GetAttendeeByEmail(ctx context.Context, email string) (Attende
 }
 
 const getAttendeeByID = `-- name: GetAttendeeByID :one
-SELECT id, first_name, last_name, email, qr_code, company_name, title, table_no, role, attendance, event_id FROM attendees WHERE id = ?
+SELECT id, first_name, last_name, email, qr_code, company_name, title, table_no, role, attendance, event_id
+FROM attendees
+WHERE id = ?
 `
 
 func (q *Queries) GetAttendeeByID(ctx context.Context, id int32) (Attendee, error) {
@@ -153,8 +214,31 @@ func (q *Queries) GetAttendeeByID(ctx context.Context, id int32) (Attendee, erro
 	return i, err
 }
 
+const getAttendeesRowCountByEventID = `-- name: GetAttendeesRowCountByEventID :one
+SELECT COUNT(*)
+FROM attendees
+WHERE event_id = ?
+`
+
+func (q *Queries) GetAttendeesRowCountByEventID(ctx context.Context, eventID int32) (int64, error) {
+	row := q.db.QueryRowContext(ctx, getAttendeesRowCountByEventID, eventID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const updateAttendeeByID = `-- name: UpdateAttendeeByID :exec
-UPDATE attendees SET first_name = ?, last_name = ?, email = ?, qr_code = ?, company_name = ?, title = ?, table_no = ?, role = ?, attendance = ? WHERE id = ?
+UPDATE attendees
+SET first_name = ?,
+    last_name = ?,
+    email = ?,
+    qr_code = ?,
+    company_name = ?,
+    title = ?,
+    table_no = ?,
+    role = ?,
+    attendance = ?
+WHERE id = ?
 `
 
 type UpdateAttendeeByIDParams struct {
