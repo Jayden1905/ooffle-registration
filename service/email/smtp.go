@@ -86,6 +86,8 @@ func (es *EmailService) SendVerificationEmail(toEmail string, token string) erro
 
 // SendInvitationEmail sends the invitation email
 func (es *EmailService) SendInvitationEmail(attendee *types.Attendee, template *types.EmailTemplate) error {
+	auth := smtp.PlainAuth("", es.SMTPUsername, es.SMTPPassword, es.SMTPHost)
+
 	// Replace template variables with attendee data
 	content := template.Content
 	content = strings.Replace(content, "{{first_name}}", attendee.FirstName, -1)
@@ -94,6 +96,7 @@ func (es *EmailService) SendInvitationEmail(attendee *types.Attendee, template *
 
 	// Prepare the email body
 	body := fmt.Sprintf(`
+		%s
 		<!DOCTYPE html>
 		<html lang="en">
 			<head>
@@ -115,14 +118,14 @@ func (es *EmailService) SendInvitationEmail(attendee *types.Attendee, template *
 					}
 					.img-container img {
 						width: 100%%;
-						height: 200px;
+						height: auto;
 						object-fit: cover;
 						object-position: center;
 					}
 				</style>
 			</head>
 		<body>
-		<table class="container" role="presentation" cellspacing="0" cellpadding="0">
+		<table style="background-color: %s;" class="container" role="presentation" cellspacing="0" cellpadding="0">
 			<tr>
 				<td class="img-container">
 					<img src="%s" alt="Header" />
@@ -141,14 +144,11 @@ func (es *EmailService) SendInvitationEmail(attendee *types.Attendee, template *
 		</table>
 		</body>
 		</html>
-	`, template.HeaderImage, content, template.FooterImage)
+	`, template.Message, template.BgColor, template.HeaderImage, content, template.FooterImage)
 
-	subject := "Subject: Verify Your Account\r\n"
-	contentType := "MIME-Version: 1.0\r\nContent-Type: text/html; charset=\"UTF-8\";\r\n"
-
+	subject := fmt.Sprintf("Subject: %s\r\n", template.Subject)
+	contentType := "MIME-Version: 1.0\r\nContent-Type: text/html; charset=\"UTF-8\"\r\n"
 	msg := []byte(subject + contentType + "\r\n" + body)
-
-	auth := smtp.PlainAuth("", es.SMTPUsername, es.SMTPPassword, es.SMTPHost)
 
 	// Send the email
 	err := smtp.SendMail(es.SMTPHost+":"+es.SMTPPort, auth, es.FromEmail, []string{attendee.Email}, msg)
@@ -156,6 +156,8 @@ func (es *EmailService) SendInvitationEmail(attendee *types.Attendee, template *
 		log.Printf("Error sending email to %s: %v", attendee.Email, err)
 		return err
 	}
+
+	log.Printf("Invitation email sent to %s", attendee.Email)
 
 	return nil
 }

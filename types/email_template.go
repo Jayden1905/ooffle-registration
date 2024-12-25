@@ -8,6 +8,9 @@ type EmailTemplate struct {
 	HeaderImage string `json:"header_image"`
 	Content     string `json:"content"`
 	FooterImage string `json:"footer_image"`
+	Subject     string `json:"subject"`
+	BgColor     string `json:"bg_color"`
+	Message     string `json:"message"`
 }
 
 type EmailTempalteStore interface {
@@ -21,6 +24,9 @@ type CreateEmailTemplatePayload struct {
 	HeaderImage string `json:"header_image" validate:"required"`
 	Content     string `json:"content" validate:"required"`
 	FooterImage string `json:"footer_image" validate:"required"`
+	Subject     string `json:"subject" validate:"required"`
+	BgColor     string `json:"bg_color" validate:"required"`
+	Message     string `json:"message" validate:"required"`
 }
 
 type UpdateEmailTemplatePayload struct {
@@ -29,4 +35,7 @@ type UpdateEmailTemplatePayload struct {
 	HeaderImage string `json:"header_image" validate:"required"`
 	Content     string `json:"content" validate:"required"`
 	FooterImage string `json:"footer_image" validate:"required"`
+	Subject     string `json:"subject" validate:"required"`
+	BgColor     string `json:"bg_color" validate:"required"`
+	Message     string `json:"message" validate:"required"`
 }

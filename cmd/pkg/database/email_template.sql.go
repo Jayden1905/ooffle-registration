@@ -7,6 +7,7 @@ package database
 
 import (
 	"context"
+	"database/sql"
 )
 
 const createEmailTemplate = `-- name: CreateEmailTemplate :exec
@@ -14,16 +15,22 @@ INSERT INTO email_template (
         event_id,
         header_image,
         content,
-        footer_image
+        footer_image,
+        subject,
+        bg_color,
+        message
     )
-VALUES (?, ?, ?, ?)
+VALUES (?, ?, ?, ?, ?, ?, ?)
 `
 
 type CreateEmailTemplateParams struct {
 	EventID     int32
-	HeaderImage string
-	Content     string
-	FooterImage string
+	HeaderImage sql.NullString
+	Content     sql.NullString
+	FooterImage sql.NullString
+	Subject     sql.NullString
+	BgColor     sql.NullString
+	Message     sql.NullString
 }
 
 func (q *Queries) CreateEmailTemplate(ctx context.Context, arg CreateEmailTemplateParams) error {
@@ -32,12 +39,15 @@ func (q *Queries) CreateEmailTemplate(ctx context.Context, arg CreateEmailTempla
 		arg.HeaderImage,
 		arg.Content,
 		arg.FooterImage,
+		arg.Subject,
+		arg.BgColor,
+		arg.Message,
 	)
 	return err
 }
 
 const getEmailTemplateByEventID = `-- name: GetEmailTemplateByEventID :one
-SELECT id, event_id, header_image, content, footer_image, created_at, updated_at
+SELECT id, event_id, header_image, content, footer_image, created_at, updated_at, subject, message, bg_color
 FROM email_template
 WHERE event_id = ?
 `
@@ -53,12 +63,15 @@ func (q *Queries) GetEmailTemplateByEventID(ctx context.Context, eventID int32) 
 		&i.FooterImage,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Subject,
+		&i.Message,
+		&i.BgColor,
 	)
 	return i, err
 }
 
 const getEmailTemplateByID = `-- name: GetEmailTemplateByID :one
-SELECT id, event_id, header_image, content, footer_image, created_at, updated_at
+SELECT id, event_id, header_image, content, footer_image, created_at, updated_at, subject, message, bg_color
 FROM email_template
 WHERE id = ?
 `
@@ -74,6 +87,9 @@ func (q *Queries) GetEmailTemplateByID(ctx context.Context, id int32) (EmailTemp
 		&i.FooterImage,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Subject,
+		&i.Message,
+		&i.BgColor,
 	)
 	return i, err
 }
@@ -83,15 +99,21 @@ UPDATE email_template
 SET event_id = ?,
     header_image = ?,
     content = ?,
-    footer_image = ?
+    footer_image = ?,
+    subject = ?,
+    bg_color = ?,
+    message = ?
 WHERE id = ?
 `
 
 type UpdateEmailTemplateByIDParams struct {
 	EventID     int32
-	HeaderImage string
-	Content     string
-	FooterImage string
+	HeaderImage sql.NullString
+	Content     sql.NullString
+	FooterImage sql.NullString
+	Subject     sql.NullString
+	BgColor     sql.NullString
+	Message     sql.NullString
 	ID          int32
 }
 
@@ -101,6 +123,9 @@ func (q *Queries) UpdateEmailTemplateByID(ctx context.Context, arg UpdateEmailTe
 		arg.HeaderImage,
 		arg.Content,
 		arg.FooterImage,
+		arg.Subject,
+		arg.BgColor,
+		arg.Message,
 		arg.ID,
 	)
 	return err

@@ -11,13 +11,19 @@ INSERT INTO email_template (
         event_id,
         header_image,
         content,
-        footer_image
+        footer_image,
+        subject,
+        bg_color,
+        message
     )
-VALUES (?, ?, ?, ?);
+VALUES (?, ?, ?, ?, ?, ?, ?);
 -- name: UpdateEmailTemplateByID :exec
 UPDATE email_template
 SET event_id = ?,
     header_image = ?,
     content = ?,
-    footer_image = ?
+    footer_image = ?,
+    subject = ?,
+    bg_color = ?,
+    message = ?
 WHERE id = ?;

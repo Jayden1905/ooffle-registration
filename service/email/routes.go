@@ -84,6 +84,9 @@ func (h *Handler) handleCreateEmailTemplate(c *fiber.Ctx) error {
 		HeaderImage: payload.HeaderImage,
 		Content:     payload.Content,
 		FooterImage: payload.FooterImage,
+		Subject:     payload.Subject,
+		BgColor:     payload.BgColor,
+		Message:     payload.Message,
 	}
 
 	// check if the email template already exists
@@ -130,6 +133,9 @@ func (h *Handler) handleUpdateEmailTemplate(c *fiber.Ctx) error {
 		HeaderImage: payload.HeaderImage,
 		Content:     payload.Content,
 		FooterImage: payload.FooterImage,
+		Subject:     payload.Subject,
+		BgColor:     payload.BgColor,
+		Message:     payload.Message,
 	}
 
 	if err := h.store.UpdateEmailTemplate(c.Context(), emailTemplate); err != nil {

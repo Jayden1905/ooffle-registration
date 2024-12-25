@@ -164,11 +164,14 @@ type AttendeesCustomField struct {
 type EmailTemplate struct {
 	ID          int32
 	EventID     int32
-	HeaderImage string
-	Content     string
-	FooterImage string
+	HeaderImage sql.NullString
+	Content     sql.NullString
+	FooterImage sql.NullString
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
+	Subject     sql.NullString
+	Message     sql.NullString
+	BgColor     sql.NullString
 }
 
 type Event struct {

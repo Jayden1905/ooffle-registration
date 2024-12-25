@@ -733,6 +733,9 @@ func (h *Handler) handleSendInvitationEmail(c *fiber.Ctx) error {
 		HeaderImage: emailTemplate.HeaderImage,
 		Content:     emailTemplate.Content,
 		FooterImage: emailTemplate.FooterImage,
+		Subject:     emailTemplate.Subject,
+		BgColor:     emailTemplate.BgColor,
+		Message:     emailTemplate.Message,
 	}
 
 	// Use a wait group to synchronize goroutines
@@ -763,9 +766,6 @@ func (h *Handler) handleSendInvitationEmail(c *fiber.Ctx) error {
 				errorChannel <- err
 				return
 			}
-
-			// No error
-			log.Printf("Invitation sent to: %s %s (%s)", att.FirstName, att.LastName, att.Email)
 		}(attendee)
 	}
 

@@ -2,6 +2,7 @@ package email
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/jayden1905/event-registration-software/cmd/pkg/database"
 	"github.com/jayden1905/event-registration-software/types"
@@ -26,9 +27,12 @@ func (s *Store) GetEmailTemplateByEventID(c context.Context, eventID int32) (*ty
 	return &types.EmailTemplate{
 		ID:          int32(emailTemplate.ID),
 		EventID:     int32(emailTemplate.EventID),
-		HeaderImage: emailTemplate.HeaderImage,
-		Content:     emailTemplate.Content,
-		FooterImage: emailTemplate.FooterImage,
+		HeaderImage: emailTemplate.HeaderImage.String,
+		Content:     emailTemplate.Content.String,
+		FooterImage: emailTemplate.FooterImage.String,
+		Subject:     emailTemplate.Subject.String,
+		BgColor:     emailTemplate.BgColor.String,
+		Message:     emailTemplate.Message.String,
 	}, nil
 }
 
@@ -36,9 +40,12 @@ func (s *Store) GetEmailTemplateByEventID(c context.Context, eventID int32) (*ty
 func (s *Store) CreateEmailTemplate(ctx context.Context, emailTemplate *types.EmailTemplate) error {
 	err := s.db.CreateEmailTemplate(ctx, database.CreateEmailTemplateParams{
 		EventID:     emailTemplate.EventID,
-		HeaderImage: emailTemplate.HeaderImage,
-		Content:     emailTemplate.Content,
-		FooterImage: emailTemplate.FooterImage,
+		HeaderImage: sql.NullString{String: emailTemplate.HeaderImage, Valid: emailTemplate.HeaderImage != ""},
+		Content:     sql.NullString{String: emailTemplate.Content, Valid: emailTemplate.Content != ""},
+		FooterImage: sql.NullString{String: emailTemplate.FooterImage, Valid: emailTemplate.FooterImage != ""},
+		Subject:     sql.NullString{String: emailTemplate.Subject, Valid: emailTemplate.Subject != ""},
+		BgColor:     sql.NullString{String: emailTemplate.BgColor, Valid: emailTemplate.BgColor != ""},
+		Message:     sql.NullString{String: emailTemplate.Message, Valid: emailTemplate.Message != ""},
 	})
 
 	if err != nil {
@@ -51,11 +58,14 @@ func (s *Store) CreateEmailTemplate(ctx context.Context, emailTemplate *types.Em
 // UpdateEmailTemplate updates an email template in the database
 func (s *Store) UpdateEmailTemplate(ctx context.Context, emailTemplate *types.EmailTemplate) error {
 	err := s.db.UpdateEmailTemplateByID(ctx, database.UpdateEmailTemplateByIDParams{
-		EventID:     emailTemplate.EventID,
-		HeaderImage: emailTemplate.HeaderImage,
-		Content:     emailTemplate.Content,
-		FooterImage: emailTemplate.FooterImage,
 		ID:          emailTemplate.ID,
+		EventID:     emailTemplate.EventID,
+		HeaderImage: sql.NullString{String: emailTemplate.HeaderImage, Valid: emailTemplate.HeaderImage != ""},
+		Content:     sql.NullString{String: emailTemplate.Content, Valid: emailTemplate.Content != ""},
+		FooterImage: sql.NullString{String: emailTemplate.FooterImage, Valid: emailTemplate.FooterImage != ""},
+		Subject:     sql.NullString{String: emailTemplate.Subject, Valid: emailTemplate.Subject != ""},
+		BgColor:     sql.NullString{String: emailTemplate.BgColor, Valid: emailTemplate.BgColor != ""},
+		Message:     sql.NullString{String: emailTemplate.Message, Valid: emailTemplate.Message != ""},
 	})
 
 	if err != nil {

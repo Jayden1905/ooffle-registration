@@ -2,9 +2,9 @@
 CREATE TABLE IF NOT EXISTS `email_template` (
     `id` int NOT NULL AUTO_INCREMENT,
     `event_id` int NOT NULL,
-    `header_image` text NOT NULL,
-    `content` text NOT NULL,
-    `footer_image` text NOT NULL,
+    `header_image` text,
+    `content` text,
+    `footer_image` text,
     `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
