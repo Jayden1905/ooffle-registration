@@ -35,7 +35,7 @@ func (s *Store) CreateAttendee(ctx context.Context, attendee *types.Attendee) er
 		Role:        sql.NullString{String: attendee.Role, Valid: true},
 		Attendance: database.NullAttendeesAttendance{
 			AttendeesAttendance: attendanceValue,
-			Valid:               true,
+			Valid:               attendee.Attendance,
 		},
 	})
 	if err != nil {
@@ -111,9 +111,6 @@ func (s *Store) DeleteAllAttendeesByEventID(eventID int32) error {
 // UpdateAttendeeByID updates an attendee in the database by ID
 func (s *Store) UpdateAttendeeByID(attendeeID int32, data *types.Attendee) error {
 	attendanceValue := database.AttendeesAttendanceNo
-	if data.Attendance {
-		attendanceValue = database.AttendeesAttendanceYes
-	}
 
 	err := s.db.UpdateAttendeeByID(context.Background(), database.UpdateAttendeeByIDParams{
 		ID:          attendeeID,
@@ -127,7 +124,7 @@ func (s *Store) UpdateAttendeeByID(attendeeID int32, data *types.Attendee) error
 		Role:        sql.NullString{String: data.Role, Valid: true},
 		Attendance: database.NullAttendeesAttendance{
 			AttendeesAttendance: attendanceValue,
-			Valid:               true,
+			Valid:               data.Attendance,
 		},
 	})
 	if err != nil {

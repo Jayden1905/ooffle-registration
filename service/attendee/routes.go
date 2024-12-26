@@ -32,13 +32,62 @@ func NewHandler(store types.AttendeeStore, eventStore types.EventStore, userStor
 func (h *Handler) RegisterRoutes(router fiber.Router) {
 	router.Get("/event/:event_id/attendees", auth.WithJWTAuth(h.handleGetAttendeesPaginated, h.userStore))
 	router.Get("/event/:event_id/attendees/count", auth.WithJWTAuth(h.handleGetAttendeesRowCount, h.userStore))
+	router.Get("/attendees/:attendee_id", auth.WithJWTAuth(h.handleGetAttendeeByID, h.userStore))
 	router.Get("/event/:event_id/attendees/all", auth.WithJWTAuth(h.handleGetAllAttendees, h.userStore))
 	router.Post("/event/add_attendee", auth.WithJWTAuth(h.handleCreateNewAttendee, h.userStore))
 	router.Delete("/event/:event_id/attendees/:attendee_id", auth.WithJWTAuth(h.handleDeleteAttendeeByID, h.userStore))
 	router.Delete("/event/:event_id/attendees", auth.WithJWTAuth(h.handleDeleteAllAttendeesByEventID, h.userStore))
-	router.Patch("/event/attendees/:attendee_id", auth.WithJWTAuth(h.handleUpdateAttendeeByID, h.userStore))
+	router.Put("/event/attendees/:attendee_id", auth.WithJWTAuth(h.handleUpdateAttendeeByID, h.userStore))
 	router.Post("/event/:event_id/attendees/import", auth.WithJWTAuth(h.handleImportAttendeesFromCSV, h.userStore))
 	router.Post("/event/:event_id/attendees/send_invitation", auth.WithJWTAuth(h.handleSendInvitationEmail, h.userStore))
+	router.Post("/attendees/mark_attendance/:attendee_email", auth.WithJWTAuth(h.handleMarkAttendeeAttendance, h.userStore))
+}
+
+func (h *Handler) handleGetAttendeeByID(c *fiber.Ctx) error {
+	userID := auth.GetUserIDFromContext(c)
+
+	// Convert the attendee ID to integer from params
+	attendeeIDString := c.Params("attendee_id")
+	attendeeID, err := strconv.Atoi(attendeeIDString)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid attendee ID",
+		})
+	}
+
+	// Check if the attendee exists
+	attendee, err := h.store.GetAttendeeByID(int32(attendeeID))
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+				"error": "Attendee not found",
+			})
+		}
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to get attendee",
+		})
+	}
+
+	// Check if the user is the owner of the event
+	event, err := h.eventStore.GetEventByID(attendee.EventID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+				"error": "Event not found",
+			})
+		}
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to get event",
+		})
+	}
+
+	if event.UserID != userID {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Unauthorized",
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(attendee)
 }
 
 func (h *Handler) handleCreateNewAttendee(c *fiber.Ctx) error {
@@ -237,6 +286,7 @@ func (h *Handler) handleImportAttendeesFromCSV(c *fiber.Ctx) error {
 				Title:       record[4],
 				TableNo:     utils.ParseTableNo(record[5]),
 				Role:        record[6],
+				Attendance:  false,
 			}
 
 			// Insert attendee
@@ -783,5 +833,73 @@ func (h *Handler) handleSendInvitationEmail(c *fiber.Ctx) error {
 	// Successfully sent all emails
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"message": "Invitation emails sent successfully",
+	})
+}
+
+func (h *Handler) handleMarkAttendeeAttendance(c *fiber.Ctx) error {
+	userID := auth.GetUserIDFromContext(c)
+
+	// Convert the attendee ID to integer from params
+	attendeeEmail := c.Params("attendee_email")
+
+	// Check if the attendee exists
+	attendee, err := h.store.GetAttendeeByEmail(attendeeEmail)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+				"error": "Attendee not found",
+			})
+		}
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to get attendee",
+		})
+	}
+
+	// Check if the attendee has already been marked
+	if attendee.Attendance {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Attendance already marked",
+		})
+	}
+
+	// Check if the user is the owner of the event
+	event, err := h.eventStore.GetEventByID(attendee.EventID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+				"error": "Event not found",
+			})
+		}
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to get event",
+		})
+	}
+
+	if event.UserID != userID {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Unauthorized",
+		})
+	}
+
+	// Mark the attendance of the attendee
+	if err := h.store.UpdateAttendeeByID(attendee.ID, &types.Attendee{
+		FirstName:   attendee.FirstName,
+		LastName:    attendee.LastName,
+		Email:       attendee.Email,
+		EventID:     attendee.EventID,
+		QrCode:      attendee.QrCode,
+		CompanyName: attendee.CompanyName,
+		Title:       attendee.Title,
+		TableNo:     attendee.TableNo,
+		Role:        attendee.Role,
+		Attendance:  true,
+	}); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to mark attendance",
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message": "Attendance marked successfully",
 	})
 }

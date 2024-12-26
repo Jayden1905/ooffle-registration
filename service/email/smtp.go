@@ -92,7 +92,7 @@ func (es *EmailService) SendInvitationEmail(attendee *types.Attendee, template *
 	content := template.Content
 	content = strings.Replace(content, "{{first_name}}", attendee.FirstName, -1)
 	content = strings.Replace(content, "{{last_name}}", attendee.LastName, -1)
-	content = strings.Replace(content, "{{qr_code}}", attendee.QrCode, -1) // Use cid for the inline image
+	content = strings.Replace(content, "{{qr_code}}", attendee.QrCode, -1)
 
 	// Prepare the email body
 	body := fmt.Sprintf(`
@@ -125,7 +125,7 @@ func (es *EmailService) SendInvitationEmail(attendee *types.Attendee, template *
 				</style>
 			</head>
 		<body>
-		<table style="background-color: %s;" class="container" role="presentation" cellspacing="0" cellpadding="0">
+		<table style="background-color: %s; color: black;" class="container" role="presentation" cellspacing="0" cellpadding="0">
 			<tr>
 				<td class="img-container">
 					<img src="%s" alt="Header" />
