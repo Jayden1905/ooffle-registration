@@ -51,9 +51,7 @@ func (h *Handler) handleGetAttendeeByID(c *fiber.Ctx) error {
 	attendeeIDString := c.Params("attendee_id")
 	attendeeID, err := strconv.Atoi(attendeeIDString)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid attendee ID",
-		})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid attendee ID"})
 	}
 
 	// Check if the attendee exists
