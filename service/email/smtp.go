@@ -157,7 +157,5 @@ func (es *EmailService) SendInvitationEmail(attendee *types.Attendee, template *
 		return err
 	}
 
-	log.Printf("Invitation email sent to %s", attendee.Email)
-
 	return nil
 }
