@@ -39,7 +39,8 @@ func (h *Handler) RegisterRoutes(router fiber.Router) {
 	router.Delete("/event/:event_id/attendees", auth.WithJWTAuth(h.handleDeleteAllAttendeesByEventID, h.userStore))
 	router.Put("/event/attendees/:attendee_id", auth.WithJWTAuth(h.handleUpdateAttendeeByID, h.userStore))
 	router.Post("/event/:event_id/attendees/import", auth.WithJWTAuth(h.handleImportAttendeesFromCSV, h.userStore))
-	router.Post("/event/:event_id/attendees/send_invitation", auth.WithJWTAuth(h.handleSendInvitationEmail, h.userStore))
+	router.Post("/event/:event_id/attendees/send_invitation", auth.WithJWTAuth(h.handleSendInvitationEmails, h.userStore))
+	router.Post("/attendees/send_invitation/:attendee_id", auth.WithJWTAuth(h.handleSendInvitationEmailbyID, h.userStore))
 	router.Post("/attendees/mark_attendance/:attendee_email", auth.WithJWTAuth(h.handleMarkAttendeeAttendance, h.userStore))
 }
 
@@ -370,6 +371,14 @@ func (h *Handler) handleUpdateAttendeeByID(c *fiber.Ctx) error {
 	if event.UserID != userID {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": "Unauthorized",
+		})
+	}
+
+	// Delete the old qr image from Cloudinary
+	err = utils.DeleteQrImageFromCloudinary(attendee.QrCode)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to delete image",
 		})
 	}
 
@@ -735,8 +744,84 @@ func (h *Handler) handleGetAttendeesRowCount(c *fiber.Ctx) error {
 	})
 }
 
+// handler to send invitation email to attendee by attendee id
+func (h *Handler) handleSendInvitationEmailbyID(c *fiber.Ctx) error {
+	userID := auth.GetUserIDFromContext(c)
+
+	// Convert the attendee ID to integer from params
+	attendeeIDString := c.Params("attendee_id")
+	attendeeID, err := strconv.Atoi(attendeeIDString)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid attendee ID",
+		})
+	}
+
+	// Check if the attendee exists
+	attendee, err := h.store.GetAttendeeByID(int32(attendeeID))
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+				"error": "Attendee not found",
+			})
+		}
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to get attendee",
+		})
+	}
+
+	// Check if the user is the owner of the event
+	event, err := h.eventStore.GetEventByID(attendee.EventID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+				"error": "Event not found",
+			})
+		}
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to get event",
+		})
+	}
+
+	if event.UserID != userID {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Unauthorized",
+		})
+	}
+
+	// Get the email template by event ID
+	emailTemplate, err := h.emailStore.GetEmailTemplateByEventID(c.Context(), attendee.EventID)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to get email template",
+		})
+	}
+
+	emailTmp := &types.EmailTemplate{
+		ID:          emailTemplate.ID,
+		EventID:     emailTemplate.EventID,
+		HeaderImage: emailTemplate.HeaderImage,
+		Content:     emailTemplate.Content,
+		FooterImage: emailTemplate.FooterImage,
+		Subject:     emailTemplate.Subject,
+		BgColor:     emailTemplate.BgColor,
+		Message:     emailTemplate.Message,
+	}
+
+	// Send invitation email to the attendee
+	if err := h.mailer.SendInvitationEmail(attendee, emailTmp); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to send invitation email",
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message": "Invitation email sent successfully",
+	})
+}
+
 // handler to send invitation email to attendees
-func (h *Handler) handleSendInvitationEmail(c *fiber.Ctx) error {
+func (h *Handler) handleSendInvitationEmails(c *fiber.Ctx) error {
 	userID := auth.GetUserIDFromContext(c)
 
 	// Check if the user is the owner of the event
